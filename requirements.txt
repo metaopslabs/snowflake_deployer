@@ -1,0 +1,9 @@
+#yaml
+#json
+cryptography
+snowflake-connector-python
+pyyaml
+schema
+ruamel.yaml
+ruamel.yaml.string
+jinja2
