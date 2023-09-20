@@ -1,4 +1,5 @@
 site_name: MetaOps Deploy
+site_url: https://metaopslabs.github.io/snowflake_deployer/
 theme:
   name: 'material'
   features:
