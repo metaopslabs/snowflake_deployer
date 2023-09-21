@@ -12,24 +12,13 @@ python -m pip install snowflake-deployer
 MetaOps Deploy comes with a RSA Token generater which uses an environment variable to encrypt.
 
 1. Create a random generated password
-2. Store password as environment variable
+2. Create RSA private & public keys
 
-MacOS:
 ```
-export PRIVATE_KEY_PASSWORD="<insert password>"
-```
-
-windows:
-```
-set PRIVATE_KEY_PASSWORD="<insert password>"
+snowflake-deployer keys -p {password key}
 ```
 
-3. Create RSA private & public keys
-```
-python metaops-deploy/generate_keys.py
-```
-
-4. Save keys from output to a vault or secure location!
+3. Save keys from output to a vault or secure location!
 
 ## Snowflake 
 
@@ -71,11 +60,11 @@ Store the follow environment variables.
 - SNOWFLAKE_WAREHOUSE
     - Snowflake warehoue used to execute deployments (for statements requiring an active warehouse).  Below is the default from the Snowflake set up script. This can be updated in the script to fit the naming convention of the environment.
     - default: DEPLOY_WH
-- SNOWFLAKE_PRIVATE_KEY_PASSPHASE
-    - The private key password described in the beginning of this section used to create the private key.
-- SNOWFLAKE_PRIVATE_KEY_PASSPHASE
+- SNOWFLAKE_PRIVATE_KEY_PASSWORD
+    - The private key password described in the beginning of this section used to create the private key.  This is the same password randomly generated in created the RSA tokens.
+- SNOWFLAKE_PRIVATE_KEY
     - The private key.  This should include the "-----BEGIN ENCRYPTED PRIVATE KEY-----" and "-----END ENCRYPTED PRIVATE KEY-----" within the private key.
 
 ## Multiple Environments
 
-To set up multiple environments, simply repeat these steps and store the values within your vault.  Then set up multiple environments within GitHub with seperate environment variables per github environment.
+To set up multiple environments, simply repeat these steps and store the values within your vault.  Then set up multiple environments within GitHub with seperate environment variables per github environment (or via secrets with an environment prefix).

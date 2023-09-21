@@ -12,7 +12,7 @@ with pathlib.Path('requirements.txt').open() as requirements_txt:
 
 setup(
     name='snowflake-deployer',
-    version='0.1.0',
+    version='0.1.1',
     description='Snowflake state based deployer',
     author='Justin Hanson, Jernej Plankelj',
     entry_points = {
@@ -24,4 +24,4 @@ setup(
     include_package_data=True,
     packages=find_packages(),
     keywords = ['SNOWFLAKE','DATAOPS','DEVOPS','DATA','DEPLOYMENT']
-)
+) 

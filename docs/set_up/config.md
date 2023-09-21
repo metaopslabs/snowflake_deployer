@@ -12,7 +12,7 @@ deploy_config_prod.yml
 
 ## Referencing a Config File
 
-There are 2 ways to tell MetaOps Deployer which config file to use during execution.
+There are 2 ways to tell Snowflake Deployer which config file to use during execution.
 
 Option 1 - Command Line Parameter
 

@@ -8,7 +8,7 @@ from cryptography.hazmat.primitives import serialization
 import os
 
 class snowflake_client:
-    def __init__(self,private_key: str, private_key_passphase: str, host: str
+    def __init__(self,private_key: str, private_key_password: str, host: str
                       , username: str, warehouse: str
                       #, role: str
                       , database: str, schema: str):
@@ -16,7 +16,7 @@ class snowflake_client:
         #self.field2 = whatever
         p_key= serialization.load_pem_private_key(
             private_key.encode(),
-            password=private_key_passphase.encode(),
+            password=private_key_password.encode(),
             backend=default_backend()
         )
 

@@ -39,10 +39,10 @@ class configurator:
             else: 
                 raise missing_parameter('SNOWFLAKE_ACCOUNT')
 
-        if "SNOWFLAKE_PRIVATE_KEY_PASSPHASE" in os.environ:
-            SNOWFLAKE_PRIVATE_KEY_PASSPHASE = os.environ.get('SNOWFLAKE_PRIVATE_KEY_PASSPHASE')
+        if "SNOWFLAKE_PRIVATE_KEY_PASSWORD" in os.environ:
+            SNOWFLAKE_PRIVATE_KEY_PASSWORD = os.environ.get('SNOWFLAKE_PRIVATE_KEY_PASSWORD')
         else:
-            raise missing_parameter('SNOWFLAKE_PRIVATE_KEY_PASSPHASE')
+            raise missing_parameter('SNOWFLAKE_PRIVATE_KEY_PASSWORD')
         
         if "SNOWFLAKE_PRIVATE_KEY" in os.environ:
             SNOWFLAKE_PRIVATE_KEY = os.environ.get('SNOWFLAKE_PRIVATE_KEY')
@@ -203,7 +203,7 @@ class configurator:
         config['WAREHOUSE_SET'] = WAREHOUSE_SET
         config['SNOWFLAKE_ROLE'] = SNOWFLAKE_ROLE
         config['ROLE_SET'] = ROLE_SET
-        config['SNOWFLAKE_PRIVATE_KEY_PASSPHASE'] = SNOWFLAKE_PRIVATE_KEY_PASSPHASE
+        config['SNOWFLAKE_PRIVATE_KEY_PASSWORD'] = SNOWFLAKE_PRIVATE_KEY_PASSWORD
         config['SNOWFLAKE_PRIVATE_KEY'] = SNOWFLAKE_PRIVATE_KEY
         config['database'] = database 
         config['schema'] = schema
