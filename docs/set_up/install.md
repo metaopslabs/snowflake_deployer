@@ -54,7 +54,7 @@ Store the follow environment variables.
 
 | <div style="width:175px">Environment Variable</div>       | Description                          |
 | ------------------------------------------------  | ------------------------------------ |
-| `SNOWFLAKE_ACCOUNT`         | <ul><li>Snowflake account - Only include the [account identifier].[region].[cloud provider]</li><li>v</li>Example: wf79437.us-central1.gcp</ul> |
+| `SNOWFLAKE_ACCOUNT`         | <ul><li>Snowflake account - Only include the [account identifier].[region].[cloud provider]</li><li>Example: wf79437.us-central1.gcp</li></ul> |
 | `SNOWFLAKE_USERNAME`        | <ul><li>Service account of the deployment user in Snowflake.  Below is the default from the Snowflake set up script.  This can be updated in the script to fit the naming convention of the environment.</li><li>Default: SERVICE_DEPLOY</li></ul> |
 | `SNOWFLAKE_WAREHOUSE`          | <ul><li>Snowflake warehouse used to execute deployments (for statements requiring an active warehouse).  Below is the default from the Snowflake set up script. This can be updated in the script to fit the naming convention of the environment.</li><li>Default: DEPLOY_WH</li></ul> |
 | `SNOWFLAKE_ROLE`          | <ul><li>Snowflake role used for deployment queries.</li><li>Default: INSTANCEADMIN</li></ul> |
