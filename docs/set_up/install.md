@@ -52,19 +52,15 @@ GRANT EXECUTE TASK ON ACCOUNT TO ROLE INSTANCEADMIN;
 
 Store the follow environment variables.  
 
-- SNOWFLAKE_ACCOUNT
-    * Snowflake account - Only include the [account identifier].[region].[cloud provider]
-    * example: wf79437.us-central1.gcp
-- SNOWFLAKE_USERNAME
-    * Service account of the deployment user in Snowflake.  Below is the default from the Snowflake set up script.  This can be updated in the script to fit the naming convention of the environment.
-    * default: SERVICE_DEPLOY
-- SNOWFLAKE_WAREHOUSE
-    * Snowflake warehoue used to execute deployments (for statements requiring an active warehouse).  Below is the default from the Snowflake set up script. This can be updated in the script to fit the naming convention of the environment.
-    * default: DEPLOY_WH
-- SNOWFLAKE_PRIVATE_KEY_PASSWORD
-    * The private key password described in the beginning of this section used to create the private key.  This is the same password randomly generated in created the RSA tokens.
-- SNOWFLAKE_PRIVATE_KEY
-    * The private key.  This should include the "-----BEGIN ENCRYPTED PRIVATE KEY-----" and "-----END ENCRYPTED PRIVATE KEY-----" within the private key.
+| <div style="width:175px">Environment Variable</div>       | Description                          |
+| ------------------------------------------------  | ------------------------------------ |
+| `SNOWFLAKE_ACCOUNT`         | <ul><li>Snowflake account - Only include the [account identifier].[region].[cloud provider]</li><li>v</li>Example: wf79437.us-central1.gcp</ul> |
+| `SNOWFLAKE_USERNAME`        | <ul><li>Service account of the deployment user in Snowflake.  Below is the default from the Snowflake set up script.  This can be updated in the script to fit the naming convention of the environment.</li><li>Default: SERVICE_DEPLOY</li></ul> |
+| `SNOWFLAKE_WAREHOUSE`          | <ul><li>Snowflake warehouse used to execute deployments (for statements requiring an active warehouse).  Below is the default from the Snowflake set up script. This can be updated in the script to fit the naming convention of the environment.</li><li>Default: DEPLOY_WH</li></ul> |
+| `SNOWFLAKE_ROLE`          | <ul><li>Snowflake role used for deployment queries.</li><li>Default: INSTANCEADMIN</li></ul> |
+| `SNOWFLAKE_PRIVATE_KEY_PASSWORD`      | <ul><li>The private key password described in the beginning of this section used to create the private key.  This is the same password randomly generated in created the RSA tokens.</li></ul> |
+| `SNOWFLAKE_PRIVATE_KEY`         | <ul><li>The private key.  This should include the "-----BEGIN ENCRYPTED PRIVATE KEY-----" and "-----END ENCRYPTED PRIVATE KEY-----" within the private key.</li></ul> |
+
 
 ## Multiple Environments
 
