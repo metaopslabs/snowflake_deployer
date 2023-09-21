@@ -51,10 +51,10 @@ GRANT EXECUTE TASK ON ACCOUNT TO ROLE INSTANCEADMIN;
 ## Environment Variables
 
 Store the follow environment variables.  
-* SNOWFLAKE_ACCOUNT
+- SNOWFLAKE_ACCOUNT
     - Snowflake account - Only include the [account identifier].[region].[cloud provider]
     - example: wf79437.us-central1.gcp
-* SNOWFLAKE_USERNAME
+- SNOWFLAKE_USERNAME
     - Service account of the deployment user in Snowflake.  Below is the default from the Snowflake set up script.  This can be updated in the script to fit the naming convention of the environment.
     - default: SERVICE_DEPLOY
 - SNOWFLAKE_WAREHOUSE
