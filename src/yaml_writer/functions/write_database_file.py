@@ -1,6 +1,6 @@
 from pathlib import Path
-#import yaml
-import ruamel.yaml
+import yaml
+#import ruamel.yaml
 import src.common.processing_vars as var
 import os.path
 #import ruamel.yaml as yaml
@@ -34,12 +34,13 @@ def write_database_file(self,d: dict):
     else:
         data['GRANTS']=var.EMPTY_STRING
 
-    ryaml = ruamel.yaml.YAML(typ=['rt', 'string'])
-    yaml_string = ryaml.dump_to_string(data)
-    #yaml_string = yaml.safe_dump(data, sort_keys=False)
-    yaml_string_converted = self.replace_jinja_ref_string(yaml_string)
-    yaml_string_converted = yaml_string_converted.replace("'"+var.EMPTY_STRING+"'",'')
+    #ryaml = ruamel.yaml.YAML(typ=['rt', 'string'])
+    #yaml_string = ryaml.dump_to_string(data)
+    yaml_string = yaml.safe_dump(data, sort_keys=False)
+    #yaml_string_converted = self.replace_jinja_ref_string(yaml_string)
+    #yaml_string_converted = yaml_string_converted.replace("'"+var.EMPTY_STRING+"'",'')
     #yaml_str = yaml.dump(data, default_flow_style=False,indent=4).replace(r"''", '') #ruamel version
+    yaml_string_converted = self.convert_special_characters_back_in_file(yaml_string)
     with open(yml_path, "w+") as f:
         f.write(yaml_string_converted)
 

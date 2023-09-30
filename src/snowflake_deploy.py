@@ -87,7 +87,7 @@ def ref(ref_val: str)->str:
     
     parts = ref_val.split('__')
     if len(parts) == 1:
-        raise Exception('Must use instance level function (warehouse() or role()) for ref ' + ref_val + ' in file ' + template_path)
+        raise Exception('Must use account level function (warehouse() or role()) for ref ' + ref_val + ' in file ' + template_path)
     elif len(parts) == 3:
         db = parts[0]
         schema = parts[1]
@@ -342,7 +342,7 @@ def snowflake_deploy(args:dict):
             folders = template_path.split('/')
             top_level = folders[0]
 
-            if folders[0].upper() == 'INSTANCE':
+            if folders[0].upper() == 'ACCOUNT':
                 if folders[1].upper() == 'WAREHOUSES':
                     obj_type = 'warehouse'
                     raw_name = folders[2].split('.')[0]

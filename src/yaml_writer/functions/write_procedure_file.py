@@ -1,6 +1,6 @@
 from pathlib import Path
-#import yaml
-import ruamel.yaml
+import yaml
+#import ruamel.yaml
 import src.common.processing_vars as var
 def write_procedure_file(self, database_name_sans_env:str, schema_name:str, d:dict):
     base_path = 'snowflake/data/' + database_name_sans_env + '/' + schema_name + '/PROCEDURES/' + database_name_sans_env + '__' + schema_name + '__' + d['PROCEDURE_NAME_SANS_ENV'] + '__' + d['PROCEDURE_SIGNATURE_TYPES']
@@ -22,7 +22,8 @@ def write_procedure_file(self, database_name_sans_env:str, schema_name:str, d:di
     data = self.create_parent_load_data(yml_path)
 
     #data['SIGNATURE'] = p['SIGNATURE']
-    data['INPUT_ARGS'] = self.choose_value_list(data, 'INPUT_ARGS', d,'INPUT_ARGS', var.EMPTY_STRING)
+    data['INPUT_ARGS'] = self.choose_value_list_of_objects(data, 'INPUT_ARGS', d,'INPUT_ARGS', var.EMPTY_LIST)
+    #data['INPUT_ARGS'] = self.choose_list_objects(d['RETURNS'], data['RETURNS'])
     data['RETURNS'] = self.choose_value_string(data, 'RETURNS', d,'RETURNS', var.EMPTY_STRING)
     data['LANGUAGE'] = self.choose_value_string(data, 'LANGUAGE', d,'LANGUAGE', var.EMPTY_STRING)
     #data['NULL_HANDLING'] = p['NULL HANDLING']
@@ -32,10 +33,10 @@ def write_procedure_file(self, database_name_sans_env:str, schema_name:str, d:di
     data['IS_SECURE'] = True if d['IS_SECURE'] == 'Y' else False
 
     if data['LANGUAGE'] == 'PYTHON':
-        data['IMPORTS'] = self.choose_value_list(data, 'IMPORTS', d,'IMPORTS', var.EMPTY_STRING)
+        data['IMPORTS'] = self.choose_value_list(data, 'IMPORTS', d,'IMPORTS', var.EMPTY_LIST)
         data['HANDLER'] = self.choose_value_string(data, 'HANDLER', d,'HANDLER', var.EMPTY_STRING)
         data['RUNTIME_VERSION'] = self.choose_value_string(data, 'RUNTIME_VERSION', d,'RUNTIME_VERSION', var.EMPTY_STRING)
-        data['PACKAGES'] = self.choose_value_list(data, 'PACKAGES', d,'PACKAGES', var.EMPTY_STRING)
+        data['PACKAGES'] = self.choose_value_list(data, 'PACKAGES', d,'PACKAGES', var.EMPTY_LIST)
         #data['INSTALLED_PACKAGES'] = p['INSTALLED_PACKAGES'] if 'INSTALLED_PACKAGES' in p else None
     #data['BODY'] = '||$$' + p['BODY'] + '$$||'
     body = d['BODY']
@@ -55,14 +56,15 @@ def write_procedure_file(self, database_name_sans_env:str, schema_name:str, d:di
     else:
         data['GRANTS']=var.EMPTY_STRING
 
-    ryaml = ruamel.yaml.YAML(typ=['rt', 'string'])
-    yaml_string = ryaml.dump_to_string(data)
-    #yaml_string = yaml.dump(data, sort_keys=False)
-    yaml_string_converted = self.replace_jinja_ref_string(yaml_string)
+    #ryaml = ruamel.yaml.YAML(typ=['rt', 'string'])
+    #yaml_string = ryaml.dump_to_string(data)
+    yaml_string = yaml.dump(data, sort_keys=False)
+    #yaml_string_converted = self.replace_jinja_ref_string(yaml_string)
     #yaml_string_converted = self.replace_jinja_multiline_string(yaml_string_converted)
-    yaml_string_converted = self.replace_jinja_list(yaml_string_converted)
-    yaml_string_converted = yaml_string_converted.replace("'"+var.EMPTY_STRING+"'",'')
-
+    #yaml_string_converted = self.replace_jinja_list(yaml_string_converted)
+    #yaml_string_converted = yaml_string_converted.replace("'"+var.EMPTY_STRING+"'",'')
+    yaml_string_converted = self.convert_special_characters_back_in_file(yaml_string)
+    
     #yaml_string_converted = yaml_string_converted.replace("'||REPLACE_BODY||'",'|\n'+p['BODY'])
     #if data['LANGUAGE'] == 'PYTHON':
     #    print(yaml_string_converted)

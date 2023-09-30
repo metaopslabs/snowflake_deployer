@@ -8,13 +8,13 @@ def object_row_access_policy_reference(self,full_object_name:str)->dict:
     data=[]
     try:
 
-        query = "SELECT ARRAY_AGG(POLICY_DB || '.' || POLICY_SCHEMA || '.' || POLICY_NAME) as MASKING_POLICIES
+        query = """SELECT ARRAY_AGG(POLICY_DB || '.' || POLICY_SCHEMA || '.' || POLICY_NAME) as MASKING_POLICIES
             FROM TABLE (PROD_CONTROL.INFORMATION_SCHEMA.POLICY_REFERENCES(
                 REF_ENTITY_DOMAIN => 'TABLE',
                 REF_ENTITY_NAME => %s ))
             WHERE POLICY_KIND = 'ROW_ACCESS_POLICY'
                 and POLICY_STATUS = 'ACTIVE'
-            ; "
+            ; """
             
         cur.execute(query,(schema_with_db))
         for rec in cur:

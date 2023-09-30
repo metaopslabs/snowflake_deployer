@@ -1,4 +1,4 @@
-site_name: MetaOps Deploy
+site_name: Snowflake Deployer
 site_url: https://metaopslabs.github.io/snowflake_deployer/
 
 # Repository
@@ -56,7 +56,9 @@ nav:
   - 'index.md'
   - Set Up Guide:
     - 'set_up/install.md'
+    - 'set_up/directory_structure.md'
     - 'set_up/config.md'
+    - 'set_up/import_existing.md'
   - Snowflake Objects:
     - 'snowflake/objects/database.md'
     - 'snowflake/objects/schema.md'
@@ -69,6 +71,9 @@ nav:
     - 'snowflake/objects/task.md'
     - 'snowflake/objects/role.md'
     - 'snowflake/objects/warehouse.md'
+  - Deployment:
+    - 'deployment/github_action_deploy.md'
+    
 #  - Section:
 #    - section/index.md 
 #    - Page 1: section/page-1.md

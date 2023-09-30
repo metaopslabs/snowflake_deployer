@@ -17,11 +17,11 @@ class validator:
     from .object_types.validate_warehouse import validate_warehouse 
     
     def validate_role_exists(self, base_dir: str, ref_filename: str, ref_source_file: str):
-        base_dir_adj = base_dir + '/instance/roles'
+        base_dir_adj = base_dir + '/account/roles'
         self._validate_file_exists(base_dir_adj, ref_filename, ref_source_file)
 
     def validate_warehouse_exists(self, base_dir: str, ref_filename: str, ref_source_file: str):
-        base_dir_adj = base_dir + '/instance/warehouses'
+        base_dir_adj = base_dir + '/account/warehouses'
         self._validate_file_exists(base_dir_adj, ref_filename, ref_source_file)
 
     def validate_ref_exists(self, base_dir:str, ref_filename:str, ref_source_file:str):
@@ -67,8 +67,8 @@ class validator:
             doc_msg = 'See documentation for file structure.'
             if level == 1:
                 for d in dirs:
-                    if d.upper() not in ('INSTANCE','DATA'):
-                        raise Exception(base_ex_msg + 'Directories in ' + subdir_raw + ' must be in [instance,data].  Found directory: ' + d)
+                    if d.upper() not in ('ACCOUNT','DATA'):
+                        raise Exception(base_ex_msg + 'Directories in ' + subdir_raw + ' must be in [account,data].  Found directory: ' + d)
                 if len(files) != 0:
                     raise Exception(base_ex_msg + 'No files can exists in directory: ' + subdir_raw + '. ' + doc_msg)
             else:
@@ -117,7 +117,7 @@ class validator:
                             if folder_type in ('FUNCTIONS','PROCEDURES','TASKS','MASKING_POLICIES','ROW_ACCESS_POLICIES') and file_ext not in ('YAML','YML','JS','PY','JAVA','SCALA','SQL'):
                                 raise Exception(base_ex_msg + 'Directory ' + subdir_raw + ' should ony contain yaml files. ' + doc_msg)
                     
-                elif top_folder_name.upper() == 'INSTANCE':
+                elif top_folder_name.upper() == 'ACCOUNT':
                     if level == 2:
                         for d in dirs:
                             if d.upper() not in ('ROLES','WAREHOUSES'):
@@ -125,7 +125,7 @@ class validator:
                         if len(files) != 0:
                             raise Exception(base_ex_msg + 'No files can exists in directory: ' + subdir_raw + '. ' + doc_msg)
                     elif level == 3:
-                        # instance/roles & instance/warehouses
+                        # account/roles & account/warehouses
                         if len(dirs) != 0:
                             # roles & warehouse folders should only contain yaml files
                             raise Exception(base_ex_msg + 'No directories can exists in directory: ' + subdir_raw + '. ' + doc_msg)

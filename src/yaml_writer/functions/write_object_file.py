@@ -1,6 +1,6 @@
 from pathlib import Path
-#import yaml
-import ruamel.yaml
+import yaml
+#import ruamel.yaml
 import src.common.processing_vars as var
 def write_object_file(self,database_name:str, schema_name:str, d: dict, object_metadata_only: bool):
     yml_path = 'snowflake/data/' + database_name + '/' + schema_name + '/OBJECTS/' + database_name + '__' + schema_name + '__' + d['OBJECT_NAME'] + '.yml'
@@ -32,12 +32,13 @@ def write_object_file(self,database_name:str, schema_name:str, d: dict, object_m
     #if 'RENAME' in data:
     #    del data['RENAME']
 
-    ryaml = ruamel.yaml.YAML(typ=['rt', 'string'])
-    yaml_string = ryaml.dump_to_string(data)
-    #yaml_string = yaml.dump(data, sort_keys=False)
-    yaml_string_converted = self.replace_jinja_ref_string(yaml_string)
-    yaml_string_converted = yaml_string_converted.replace("'"+var.EMPTY_STRING+"'",'')
-
+    #ryaml = ruamel.yaml.YAML(typ=['rt', 'string'])
+    #yaml_string = ryaml.dump_to_string(data)
+    yaml_string = yaml.dump(data, sort_keys=False)
+    #yaml_string_converted = self.replace_jinja_ref_string(yaml_string)
+    #yaml_string_converted = yaml_string_converted.replace("'"+var.EMPTY_STRING+"'",'')
+    yaml_string_converted = self.convert_special_characters_back_in_file(yaml_string)
+    
     with open(yml_path, "w+") as f:
         f.write(yaml_string_converted)
 

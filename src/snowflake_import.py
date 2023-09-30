@@ -1,5 +1,5 @@
 import os
-import src.configurator.configurator as configurator
+from src.configurator.configurator import configurator
 from src.snowflake.snowflake_client import snowflake_client as sf_client
 from src.yaml_writer.yaml_writer import yaml_writer
 from src.deploy_logger.logger import deploy_logger
@@ -84,6 +84,9 @@ def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, datab
         #tags = sf.tags_get(database_name, schema['SCHEMA_NAME'], current_role, available_roles, ignore_roles_list)
         tags = wrangler.wrangle_tag(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
         for tag in tags:
+            #print('^^^^^^^^^ BEFORE WRITE TAG FILE ^^^^^^^^^^')
+            #print(tag)
+            #print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
             writer.write_tag_file(database_name_sans_env, schema['SCHEMA_NAME'], tag)
 
         #####################################################
@@ -274,7 +277,11 @@ def snowflake_import(args:dict):
         ###############################################################################################################
         #                                                   Connect to Snowflake
         ###############################################################################################################
-        sf = sf_client(config['SNOWFLAKE_PRIVATE_KEY'], config['SNOWFLAKE_PRIVATE_KEY_PASSPHASE'], config['SNOWFLAKE_ACCOUNT'], config['SNOWFLAKE_USERNAME'], config['SNOWFLAKE_WAREHOUSE'], config['database'], config['schema'] )
+        global wrangler 
+        global available_roles
+        global ignore_roles_list 
+
+        sf = sf_client(config['SNOWFLAKE_PRIVATE_KEY'], config['SNOWFLAKE_PRIVATE_KEY_PASSWORD'], config['SNOWFLAKE_ACCOUNT'], config['SNOWFLAKE_USERNAME'], config['SNOWFLAKE_WAREHOUSE'], config['database'], config['schema'] )
         wrangler = wrangler(sf)
         #print('Connected to Snowflake')
         logging.info('Connected to Snowflake')

@@ -4,7 +4,9 @@ def wrangle_tag(self, database_name:str, schema_name:str, env_database_prefix:st
         env_database_prefix = ''
 
     tags_all = self._sf.tags_get(database_name, schema_name)  
-    
+    #print('^^^^^^^^^^ SF TAGS GET ^^^^^^^^^^^^^^^^^')
+    #print(tags_all)
+    #print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
     data = []
     for t in tags_all:
         full_tag_name = database_name + '.' + schema_name + '.' + t['TAG_NAME']
@@ -15,6 +17,7 @@ def wrangle_tag(self, database_name:str, schema_name:str, env_database_prefix:st
             t['OWNER'] = self.create_jinja_role_instance(t['OWNER'])
         
         masking_policy_references_raw = self._sf.tag_masking_policy_reference(full_tag_name)
+        
         masking_policy_references = []
         #print(masking_policy_references_raw)
         for masking_policy_reference in masking_policy_references_raw:
