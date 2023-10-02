@@ -14,7 +14,7 @@ setup(
     name='snowflake-deployer',
     version='0.1.6',
     description='Snowflake state based deployer',
-    long_description='Deploy objects to Snowflake instance in a stateful manner.  See Project Docs for details.'
+    long_description='Deploy objects to Snowflake instance in a stateful manner.  See Project Docs for details.',
     author='Justin Hanson, Jernej Plankelj',
     entry_points = {
         'console_scripts': ['snowflake-deployer=src.cli:cli'],
