@@ -12,7 +12,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='snowflake-deployer',
-    version='0.1.5',
+    version='0.1.6',
     description='Snowflake state based deployer',
     author='Justin Hanson, Jernej Plankelj',
     entry_points = {
@@ -24,5 +24,9 @@ setup(
     zip_safe=False,
     include_package_data=True,
     packages=find_packages(),
-    keywords = ['SNOWFLAKE','DATAOPS','DEVOPS','DATA','DEPLOYMENT']
+    keywords = ['SNOWFLAKE','DATAOPS','DEVOPS','DATA','DEPLOYMENT'],
+    project_urls = {
+        'Project Docs': 'https://metaopslabs.github.io/snowflake_deployer/'
+    }
+
 ) 
