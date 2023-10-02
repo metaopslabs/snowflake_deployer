@@ -29,9 +29,6 @@ jobs:
 
           echo "Build"
           python setup.py sdist
-          
-          echo "Upload"
-          twine upload dist/*
 
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@master
