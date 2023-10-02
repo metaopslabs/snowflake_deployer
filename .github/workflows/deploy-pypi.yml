@@ -28,7 +28,7 @@ jobs:
           pip install twine
 
           echo "Build"
-          setup.py sdist
+          python setup.py sdist
           
           echo "Upload"
           twine upload dist/*
