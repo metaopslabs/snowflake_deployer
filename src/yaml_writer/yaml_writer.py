@@ -164,11 +164,11 @@ class yaml_writer:
                 else:
                     db_value_list = json.loads(db_data[db_field_name].replace("'",'"'))
 
-        print('### TESTING ###')
-        print(db_data)
-        print(db_data[db_field_name])
-        print(db_value_list)
-        print('##e done e##')
+        #print('### TESTING ###')
+        #print(db_data)
+        #print(db_data[db_field_name])
+        #print(db_value_list)
+        #print('##e done e##')
         # Check if file value exists and whether the list contains jinja
         file_contains_jinja = False
         if field_name in file_data and file_data[field_name] is not None:

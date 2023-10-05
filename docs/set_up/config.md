@@ -47,6 +47,8 @@ Usage - If both the command line parameter AND environment variable are set, exe
 | `HANDLE_OWNERSHIP`            | (String) How to handle the ownership of existing objects.<ul><li>For deployments in existing environments, the deployer can manage existing options.  But the DEPLOY_ROLE may not have ownership of the objects to manage. This config tells the deployer how to handle that scenario.</li><li>Default = ERROR</li><li>Valid Values = [ERROR,GRANT]</li><li>GRANT = Grant ownership role of object to DEPLOY_ROLE so the DEPLOY_ROLE inherits ownership capabilities.  Be careful of any objects that are object by ACCOUNTADMIN as this tells the deployer to make DEPLOY_ROLE the parent role to ACCOUNTADMIN</li><li>ERROR = Deployer will error out if it does not have ownership privilege on objects it's managing.  These errors will need to be fixed manually by granting ownership to a role that the DEPLOY role is a parent role to.</li></ul> |
 | `DEPLOY_DATABASE_NAME`        | (String) Name of the MetaOps Deploy Database.<ul><li>Only needing configuration if modified database in the Snowflake set up script.  Else exclude.</li><li>For multiple environments within a single instance, environments can reference the same deploy db</li><li>Default = "_DEPLOY"</li></ul> |
 | `DEPLOY_ROLE`                 | (String) Name of the MetaOps Deploy Role.<ul><li>Only needing configuration if modified fole in the Snowflake set up script.  Else exclude.</li><li>For multiple environments within a single instance, environments can use the same role</li><li>Default = "INSTANCEADMIN"</li></ul>|
+| `IMPORT_DATABASES`                 | (List) List of databases to import.  If not included, all databases imported.  List values can either include or not include the ENV_DATABASE_PREFIX.  If not included, then ENV_DATABASE_PREFIX is applied when finding databases to import.|
+
 
 ## Example config
 
@@ -60,6 +62,11 @@ ENV_FUNCTION_PREFIX:
 OBJECT_METADATA_ONLY: True
 MAX_THREADS: 5
 HANDLE_OWNERSHIP: ERROR
+IMPORT_DATABASES:
+- ANALYTICS
+- CONTROL
+- RAW
+- SECURITY
 DEPLOY_ENV: dev
 VARS:
 - my_comment: some dev comment

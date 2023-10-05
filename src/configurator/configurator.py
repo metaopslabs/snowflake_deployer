@@ -17,6 +17,17 @@ class configurator:
             param = default_value
         return param
 
+    def _get_param_from_env_or_config_list(self, config_file:dict, param_name:str)->list:
+        if param_name in os.environ:
+            param = os.environ.get(param_name)
+        elif param_name in config_file and config_file[param_name] != '' and config_file[param_name] != []:
+            param = config_file[param_name]
+        else:
+            param = []
+        if param is None:
+            param = []
+        return param
+
     def get_config(self)->dict:
         
         # Set up parameters
@@ -178,6 +189,15 @@ class configurator:
 
         HANDLE_OWNERSHIP_RAW = self._get_param_from_env_or_config(config_file, 'HANDLE_OWNERSHIP', 'ERROR')
 
+        IMPORT_DATABASES_RAW = self._get_param_from_env_or_config_list(config_file, 'IMPORT_DATABASES')
+        IMPORT_DATABASES = []
+        for db in IMPORT_DATABASES_RAW:
+            if db.startswith(ENV_DATABASE_PREFIX):
+                IMPORT_DATABASES.append(db)
+            else:
+                new_db = ENV_DATABASE_PREFIX + db
+                IMPORT_DATABASES.append(new_db)
+
         if HANDLE_OWNERSHIP_RAW.upper() == 'GRANT':
             HANDLE_OWNERSHIP = HANDLE_OWNERSHIP_OPTION.GRANT
         elif HANDLE_OWNERSHIP_RAW.upper() == 'ERROR':
@@ -222,4 +242,5 @@ class configurator:
         config['EXCLUDED_DATABASES'] = excluded_databases
         config['VARS'] = var_dict
         config['DEPLOY_ENV'] = DEPLOY_ENV
+        config['IMPORT_DATABASES'] = IMPORT_DATABASES
         return config
