@@ -324,7 +324,6 @@ def snowflake_import(args:dict):
 
         # Databases
         #dbs = sf.databases_get(excluded_databases,config['DEPLOY_DATABASE_NAME'],config['ENV_DATABASE_PREFIX'], ignore_roles_list)
-        
         dbs = wrangler.wrangle_database(config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], excluded_databases, config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'], import_databases)
         for db in dbs:
             if db['DATABASE_NAME'] not in excluded_databases:
