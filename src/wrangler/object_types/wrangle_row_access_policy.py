@@ -5,10 +5,10 @@ def wrangle_row_access_policy(self, database_name:str, schema_name:str, env_data
     if env_role_prefix is None:
         env_role_prefix = ''
 
-    tasks = self._sf.row_access_policies_get(database_name, schema_name)  
+    policies = self._sf.row_access_policies_get(database_name, schema_name)  
     
     data = []
-    for d in tasks:
+    for d in policies:
         full_policy_name = database_name + '.' + schema_name + '.' + d['ROW_ACCESS_POLICY_NAME']
         d['OWNER'] = self._handle_ownership(handle_ownership, d['OWNER'], 'row access policy', full_policy_name, current_role, available_roles)
 

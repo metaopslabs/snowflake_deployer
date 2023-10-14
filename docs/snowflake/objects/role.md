@@ -7,6 +7,10 @@ Snowflake Docs - [ALTER ROLE](https://docs.snowflake.com/en/sql-reference/sql/al
 ## Usage 
 * Role name = file name of role yml config
 
+## Limiations
+
+* Currently does not support the REMOVAL of child roles.  If a child role is removed from the list, the deployer will NOT automatically remove relationship in Snowflake.  Future roadmap item.
+
 ## Environment Config
 * Use the ENV_ROLE_PREFIX in the environment config file to specify a prefix for ALL roles within an environment.
 * If the role filename is INGEST.yml and the ENV_ROLE_PREFIX is "PROD_", the role name will compile to "PROD_INGEST"
@@ -18,7 +22,7 @@ Snowflake Docs - [ALTER ROLE](https://docs.snowflake.com/en/sql-reference/sql/al
 | ------------------------------------------------  | ------------------------------------ |
 | `COMMENT`         | (String) - Optional |
 | `OWNER`         | (String) - Optional <ul><li>If HANDLE_OWNERSHIP=ERROR, be careful not to set OWNER to a role that the deployer does not have access to as it will no longer have access to manage</li></ul>|
-| `PARENT_ROLES`         | (String) - Optional <ul><li>List of roles this role should be granted to</li></ul>|
+| `CHILD_ROLES`         | (String) - Optional <ul><li>List of child roles that should be granted to this role.</li></ul>|
 | `TAGS`         | ({KEY:VALUE}) - Optional |
 | `GRANTS`         | ({KEY:VALUE}) - Optional |
 
@@ -49,9 +53,9 @@ Basic
 ```
 OWNER: INSTANCEADMIN
 COMMENT: Test compute resources
-PARENT_ROLES: 
-- {{role('PARENT_ROLE')}}
-- SYSADMIN
+CHILD_ROLES: 
+- {{role('CHILD_ROLE')}}
+- CUSTOMROLE
 TAGS:
 - {{ref('CONTROL__GOVERNANCE__ENV')}}: PROD
 ```
@@ -60,9 +64,9 @@ With a deploy lock & restricted deployment environments.
 ```
 OWNER: INSTANCEADMIN
 COMMENT: Test compute resources
-PARENT_ROLES: 
-- {{role('PARENT_ROLE')}}
-- SYSADMIN
+CHILD_ROLES: 
+- {{role('CHILD_ROLE')}}
+- CUSTOMROLE
 TAGS:
 - {{ref('CONTROL__GOVERNANCE__ENV')}}: PROD
 DEPLOY_LOCK: true

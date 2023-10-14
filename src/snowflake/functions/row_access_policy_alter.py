@@ -3,6 +3,8 @@ def row_access_policy_alter(self,policy_full_name:str, SIGNATURE:list, RETURN_TY
     cur = self._conn.cursor()
     query = ''
     try:
+        COMMENT = '' if COMMENT is None else COMMENT
+
         # Body
         query = "ALTER ROW ACCESS POLICY " + policy_full_name + " SET BODY -> " + BODY
         cur.execute(query)

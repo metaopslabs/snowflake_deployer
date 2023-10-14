@@ -7,14 +7,19 @@ def write_function_file(self, database_name_sans_env:str, schema_name:str, d:dic
     yml_path = base_path + '.yml'
     
     if d['LANGUAGE'].upper() == 'PYTHON':
+        language = 'PYTHON'
         ext = 'py'
     if d['LANGUAGE'].upper() == 'JAVASCRIPT':
+        language = 'JAVASCRIPT'
         ext = 'js'
     elif d['LANGUAGE'].upper() == 'SQL':
+        language = 'SQL'
         ext = 'sql'
     elif d['LANGUAGE'].upper() == 'JAVA':
+        language = 'JAVA'
         ext = 'java'
     elif d['LANGUAGE'].upper() == 'SCALA':
+        language = 'SCALA'
         ext = 'scala'
     
     body_path = base_path + '.' + ext
@@ -30,14 +35,14 @@ def write_function_file(self, database_name_sans_env:str, schema_name:str, d:dic
     data['COMMENT'] = self.choose_value_string(data, 'COMMENT', d,'COMMENT', var.EMPTY_STRING)
     data['IS_SECURE'] = True if d['IS_SECURE'] == 'Y' else False
 
-    if data['LANGUAGE'] == 'PYTHON':
+    if language == 'PYTHON':
         data['IMPORTS'] = self.choose_value_list(data, 'OIMPORTSWNER', d,'IMPORTS', var.EMPTY_LIST)
         data['HANDLER'] = self.choose_value_string(data, 'HANDLER', d,'HANDLER', var.EMPTY_STRING)
         data['RUNTIME_VERSION'] = self.choose_value_string(data, 'RUNTIME_VERSION', d,'RUNTIME_VERSION', var.EMPTY_STRING)
         data['PACKAGES'] = self.choose_value_list(data, 'PACKAGES', d,'PACKAGES', var.EMPTY_LIST)
 
     body = d['BODY']
-    if d['TAGS'] != []:
+    if 'TAGS' in d and d['TAGS'] != []:
         if 'TAGS' in data:
             data['TAGS'] = self.choose_list_objects(d['TAGS'], data['TAGS'])
         else:
@@ -45,7 +50,7 @@ def write_function_file(self, database_name_sans_env:str, schema_name:str, d:dic
     else:
         data['TAGS']=var.EMPTY_STRING
 
-    if d['GRANTS'] != []:
+    if 'GRANTS' in d and d['GRANTS'] != []:
         if 'GRANTS' in data:
             data['GRANTS'] = self.choose_list_objects(d['GRANTS'], data['GRANTS'])
         else:

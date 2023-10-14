@@ -2,7 +2,7 @@ from pathlib import Path
 import yaml
 #import ruamel.yaml
 import src.common.processing_vars as var
-def write_object_file(self,database_name:str, schema_name:str, d: dict, object_metadata_only: bool):
+def write_object_file(self,database_name:str, schema_name:str, d: dict, object_metadata_only: bool, override_existing_tags: bool=True):
     yml_path = 'snowflake/data/' + database_name + '/' + schema_name + '/OBJECTS/' + database_name + '__' + schema_name + '__' + d['OBJECT_NAME'] + '.yml'
     
     data = self.create_parent_load_data(yml_path)
@@ -12,15 +12,22 @@ def write_object_file(self,database_name:str, schema_name:str, d: dict, object_m
     data['OWNER']=self.choose_value_string(data, 'OWNER', d,'OWNER', var.EMPTY_STRING)
     data['RETENTION_TIME_IN_DAYS'] = self.choose_value_string(data, 'RETENTION_TIME_IN_DAYS', d,'RETENTION_TIME_IN_DAYS', var.EMPTY_STRING)
     
-    if d['TAGS'] != []:
+    if 'TAGS' in d and d['TAGS'] != []:
+        #if not override_existing_tags and 'TAGS' in data:
+        #    # first grab file tags and then override with tags passed in
+        #    tmp_tags = data['TAGS']
+        #    for k in d['TAGS'].keys():
+        #        tmp_tags[k] = d['TAGS'][k]
+        #    d['TAGS'] = tmp_tags
+
         if 'TAGS' in data:
-            data['TAGS'] = self.choose_list_objects(d['TAGS'], data['TAGS'])
+            data['TAGS'] = self.choose_list_objects_file_trumps(d['TAGS'], data['TAGS'])
         else:
             data['TAGS'] = d['TAGS']
     else:
         data['TAGS']=var.EMPTY_STRING
 
-    if d['GRANTS'] != []:
+    if 'GRANTS' in d and d['GRANTS'] != []:
         if 'GRANTS' in data:
             data['GRANTS'] = self.choose_list_objects(d['GRANTS'], data['GRANTS'])
         else:
@@ -28,7 +35,35 @@ def write_object_file(self,database_name:str, schema_name:str, d: dict, object_m
     else:
         data['GRANTS']=var.EMPTY_STRING
 
-    data['COLUMNS'] = d['COLUMNS']
+    #data['COLUMNS'] = self.choose_list_objects(d['COLUMNS'], data['COLUMNS'])
+    #data['COLUMNS'] = d['COLUMNS']
+    new_cols = []
+    if 'COLUMNS' in d and 'COLUMNS' in data:
+        #print(data['COLUMNS'])
+        for col in d['COLUMNS']:
+            tmp_col = col
+            col_name = col['NAME']
+            if 'TAGS' in col:
+                input_tags = col['TAGS']
+                file_tags = []
+                for file_col in data['COLUMNS']:
+                    #print(file_col)
+                    if col_name == file_col['NAME']:
+                        file_tags = file_col['TAGS']
+                        break
+                #print('## INPUT TAGS ##')
+                #print(input_tags)
+                #print('## FILE TAGS ##')
+                #print(file_tags)
+                if not override_existing_tags:
+                    new_tags = self.choose_list_objects_file_trumps(input_tags, file_tags)
+                else:
+                    new_tags = self.choose_list_objects(input_tags, file_tags)
+                tmp_col['TAGS'] = new_tags
+            new_cols.append(tmp_col)
+        data['COLUMNS'] = new_cols
+    elif 'COLUMNS' in d:
+        data['COLUMNS'] = d['COLUMNS']
     #if 'RENAME' in data:
     #    del data['RENAME']
 

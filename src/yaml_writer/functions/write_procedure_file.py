@@ -7,14 +7,19 @@ def write_procedure_file(self, database_name_sans_env:str, schema_name:str, d:di
     yml_path = base_path + '.yml'
     
     if d['LANGUAGE'].upper() == 'PYTHON':
+        language = 'PYTHON'
         ext = 'py'
     if d['LANGUAGE'].upper() == 'JAVASCRIPT':
+        language = 'JAVASCRIPT'
         ext = 'js'
     elif d['LANGUAGE'].upper() == 'SQL':
+        language = 'SQL'
         ext = 'sql'
     elif d['LANGUAGE'].upper() == 'JAVA':
+        language = 'JAVA'
         ext = 'java'
     elif d['LANGUAGE'].upper() == 'SCALA':
+        language = 'SCALA'
         ext = 'scala'
     
     body_path = base_path + '.' + ext
@@ -32,7 +37,10 @@ def write_procedure_file(self, database_name_sans_env:str, schema_name:str, d:di
     data['COMMENT'] = self.choose_value_string(data, 'COMMENT', d,'COMMENT', var.EMPTY_STRING)
     data['IS_SECURE'] = True if d['IS_SECURE'] == 'Y' else False
 
-    if data['LANGUAGE'] == 'PYTHON':
+    #print('#############################')
+    #print(data)
+    #print('##########################')
+    if language == 'PYTHON':
         data['IMPORTS'] = self.choose_value_list(data, 'IMPORTS', d,'IMPORTS', var.EMPTY_LIST)
         data['HANDLER'] = self.choose_value_string(data, 'HANDLER', d,'HANDLER', var.EMPTY_STRING)
         data['RUNTIME_VERSION'] = self.choose_value_string(data, 'RUNTIME_VERSION', d,'RUNTIME_VERSION', var.EMPTY_STRING)
@@ -40,7 +48,7 @@ def write_procedure_file(self, database_name_sans_env:str, schema_name:str, d:di
         #data['INSTALLED_PACKAGES'] = p['INSTALLED_PACKAGES'] if 'INSTALLED_PACKAGES' in p else None
     #data['BODY'] = '||$$' + p['BODY'] + '$$||'
     body = d['BODY']
-    if d['TAGS'] != []:
+    if 'TAGS' in d and d['TAGS'] != []:
         if 'TAGS' in data:
             data['TAGS'] = self.choose_list_objects(d['TAGS'], data['TAGS'])
         else:
@@ -48,7 +56,7 @@ def write_procedure_file(self, database_name_sans_env:str, schema_name:str, d:di
     else:
         data['TAGS']=var.EMPTY_STRING
 
-    if d['GRANTS'] != []:
+    if 'GRANTS' in d and d['GRANTS'] != []:
         if 'GRANTS' in data:
             data['GRANTS'] = self.choose_list_objects(d['GRANTS'], data['GRANTS'])
         else:

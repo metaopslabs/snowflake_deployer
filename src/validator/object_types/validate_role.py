@@ -4,7 +4,8 @@ def validate_role(self, config:dict):
     config_schema = Schema({
         Optional("COMMENT"): Or(str, None)
         , Optional("OWNER"): Or(str, None)
-        , Optional("PARENT_ROLES"): Or(list, None)
+        #, Optional("PARENT_ROLES"): Or(list, None)
+        , Optional("CHILD_ROLES"): Or(list, None)
         , Optional("TAGS"): Or(list, None)
         , Optional("DEPLOY_ENV"): Or(list, None)
         , Optional("DEPLOY_LOCK"): Or(bool,None)

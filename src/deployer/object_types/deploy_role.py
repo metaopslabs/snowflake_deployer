@@ -4,7 +4,7 @@ def deploy_role(self, role_name:str, file_hash:str, config:dict)->str:
     # Get vars from config
     OWNER = config['OWNER'] if 'OWNER' in config else None
     COMMENT = config['COMMENT'] if 'COMMENT' in config else None
-    PARENT_ROLES = config['PARENT_ROLES'] if 'PARENT_ROLES' in config else None
+    CHILD_ROLES = config['CHILD_ROLES'] if 'CHILD_ROLES' in config else None
     TAGS = config['TAGS'] if 'TAGS' in config and config['TAGS'] != '' and config['TAGS'] is not None else []
     ENVS = config['DEPLOY_ENV'] if 'DEPLOY_ENV' in config else None
 
@@ -22,7 +22,7 @@ def deploy_role(self, role_name:str, file_hash:str, config:dict)->str:
 
         if not role_exists:
             # Create database
-            self._sf.role_create(role_name, OWNER, COMMENT, PARENT_ROLES, TAGS, self._deploy_role)
+            self._sf.role_create(role_name, OWNER, COMMENT, CHILD_ROLES, TAGS, self._deploy_role)
 
             self._sf.deploy_hash_apply(role_name, file_hash, 'ROLE', self._deploy_db_name)
             return_status = 'C'
@@ -33,7 +33,7 @@ def deploy_role(self, role_name:str, file_hash:str, config:dict)->str:
             sf_deploy_hash = self._sf.deploy_hash_get(self._deploy_db_name, role_name, 'role')
             
             if sf_deploy_hash != file_hash:
-                self._sf.role_alter(role_name, OWNER, COMMENT, PARENT_ROLES, TAGS)
+                self._sf.role_alter(role_name, OWNER, COMMENT, CHILD_ROLES, TAGS)
                 self._sf.deploy_hash_apply(role_name, file_hash, 'ROLE', self._deploy_db_name)
 
                 return_status = 'U'

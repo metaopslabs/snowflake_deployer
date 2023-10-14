@@ -15,7 +15,7 @@ def function_create(self,function_name:str, sql_function_name:str, is_secure:boo
         func_name_adj = '"' + function_name.split('.')[0] + '"."' + function_name.split('.')[1] + '"."' + function_name.split('.')[2] + '"'
         sql_secure = 'SECURE' if is_secure else ''
         sql_returns = 'RETURNS ' + returns if returns is not None else ''
-        sql_runtime_version = "RUNTIME_VERSION = " + runtime_version if runtime_version is not None else ''
+        sql_runtime_version = "RUNTIME_VERSION = " + str(runtime_version) if runtime_version is not None else ''
         sql_packages = "PACKAGES = " + packages_adj if packages is not None and packages != [] else ''
         sql_imports = "IMPORTS = " + imports_adj if imports is not None and imports != [] else ''
         sql_handler = "HANDLER = '" + handler + "'" if handler is not None else ''

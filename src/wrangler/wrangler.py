@@ -9,19 +9,23 @@ class wrangler:
     
     def create_jinja_ref(self, database_name:str, schema_name:str, object_name:str):
         #return "!!{{!!ref(!!|!!" + database_name + "__" + schema_name + "__" + object_name + "!!|!!)!!}}!!"
-        return "<~<~ref(!!|!!" + database_name + "__" + schema_name + "__" + object_name + "!!|!!)~>~>"
+        #return "<~<~ref(!!|!!" + database_name + "__" + schema_name + "__" + object_name + "!!|!!)~>~>"
+        return "<~<~ref('" + database_name + "__" + schema_name + "__" + object_name + "')~>~>"
     
     def create_jinja_ref_instance(self, object_name:str):
         #return "!!{{!!ref(!!|!!" + object_name + "!!|!!)!!}}!!"
-        return "<~<~ref(!!|!!" + object_name + "!!|!!)~>~>"
+        #return "<~<~ref(!!|!!" + object_name + "!!|!!)~>~>"
+        return "<~<~ref('" + object_name + "')~>~>"
     
     def create_jinja_role_instance(self, object_name:str):
         #return "!!{{!!role(!!|!!" + object_name + "!!|!!)!!}}!!"
-        return "<~<~role(!!|!!" + object_name + "!!|!!)~>~>"
+        #return "<~<~role(!!|!!" + object_name + "!!|!!)~>~>"
+        return "<~<~role('" + object_name + "')~>~>"
     
     def create_jinja_warehouse_instance(self, object_name:str):
         #return "!!{{!!warhouse(!!|!!" + object_name + "!!|!!)!!}}!!"
-        return "<~<~warhouse(!!|!!" + object_name + "!!|!!)~>~>"
+        #return "<~<~warhouse(!!|!!" + object_name + "!!|!!)~>~>"
+        return "<~<~warhouse('" + object_name + "')~>~>"
     
 
     def _handle_ownership(self, handle_ownership:HANDLE_OWNERSHIP_OPTION, object_owner:str, object_type:str, object_name:str, current_role:str, available_roles:list)->str:

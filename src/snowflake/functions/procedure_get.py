@@ -1,5 +1,5 @@
 from snowflake.connector import DictCursor
-def procedure_get(self,procedure_name: str, procedure_signature:str)->bool:
+def procedure_get(self,procedure_name: str, procedure_signature:str)->dict:
     cur = self._conn.cursor(DictCursor)
 
     procedure_database = procedure_name.split('.')[0]

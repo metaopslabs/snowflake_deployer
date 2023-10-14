@@ -1,5 +1,5 @@
 from snowflake.connector import DictCursor
-def function_get(self,function_name: str, function_signature:str)->bool:
+def function_get(self,function_name: str, function_signature:str)->dict:
     cur = self._conn.cursor(DictCursor)
     
     function_database = function_name.split('.')[0]
