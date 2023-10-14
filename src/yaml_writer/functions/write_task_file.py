@@ -26,7 +26,7 @@ def write_task_file(self, database_name_sans_env:str, schema_name:str, d:dict):
 
     body = d['DEFINITION']
     
-    if d['TAGS'] != []:
+    if 'TAGS' in d and d['TAGS'] != []:
         if 'TAGS' in data:
             data['TAGS'] = self.choose_list_objects(d['TAGS'], data['TAGS'])
         else:
@@ -34,7 +34,7 @@ def write_task_file(self, database_name_sans_env:str, schema_name:str, d:dict):
     else:
         data['TAGS']=var.EMPTY_STRING
 
-    if d['GRANTS'] != []:
+    if 'GRANTS' in d and d['GRANTS'] != []:
         if 'GRANTS' in data:
             data['GRANTS'] = self.choose_list_objects(d['GRANTS'], data['GRANTS'])
         else:

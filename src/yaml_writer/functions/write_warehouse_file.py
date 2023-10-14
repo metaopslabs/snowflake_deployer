@@ -19,7 +19,7 @@ def write_warehouse_file(self, d:dict):
     data['ENABLE_QUERY_ACCELERATION'] = self.choose_value_string(data, 'ENABLE_QUERY_ACCELERATION', d,'ENABLE_QUERY_ACCELERATION', var.EMPTY_STRING)
     data['QUERY_ACCELERATION_MAX_SCALE_FACTOR'] = self.choose_value_string(data, 'QUERY_ACCELERATION_MAX_SCALE_FACTOR', d,'QUERY_ACCELERATION_MAX_SCALE_FACTOR', var.EMPTY_STRING)
 
-    if d['TAGS'] != []:
+    if 'TAGS' in d and d['TAGS'] != []:
         if 'TAGS' in data:
             data['TAGS'] = self.choose_list_objects(d['TAGS'], data['TAGS'])
         else:
@@ -27,7 +27,7 @@ def write_warehouse_file(self, d:dict):
     else:
         data['TAGS']=var.EMPTY_STRING
     
-    if d['GRANTS'] != []:
+    if 'GRANTS' in d and d['GRANTS'] != []:
         if 'GRANTS' in data:
             data['GRANTS'] = self.choose_list_objects(d['GRANTS'], data['GRANTS'])
         else:

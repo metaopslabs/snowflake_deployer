@@ -41,6 +41,7 @@ class yaml_writer:
                 #print(data)
                 #data = yaml.load(yamlfile, Loader=yaml.FullLoader)
                 data_raw = yamlfile.read().replace('{{', var.DOUBLE_LEFT_BRACKETS).replace('}}', var.DOUBLE_RIGHT_BRACKETS).replace('#',var.HASH_TAG)#.replace("'",var.SINGLE_QUOTE)
+                #print(data_raw)
             data = dict(yaml.load(data_raw, Loader=yaml.FullLoader))  
             #print('############ ^^ ################')
             #print(yml_path)
@@ -82,7 +83,7 @@ class yaml_writer:
         converted = str_val.replace('{{', var.DOUBLE_LEFT_BRACKETS)
         converted = converted.replace('}}', var.DOUBLE_RIGHT_BRACKETS)
         converted = converted.replace('#',var.HASH_TAG)
-        converted = converted.replace("'",var.SINGLE_QUOTE)
+        #converted = converted.replace("'",var.SINGLE_QUOTE)
         return converted
 
     def convert_special_characters_back_in_file(self, file_text:str)->str:
@@ -164,11 +165,10 @@ class yaml_writer:
                 else:
                     db_value_list = json.loads(db_data[db_field_name].replace("'",'"'))
 
-        #print('### TESTING ###')
-        #print(db_data)
+        #print('############### RAW ###############')
         #print(db_data[db_field_name])
+        #print('############### MODIFIED ###############')
         #print(db_value_list)
-        #print('##e done e##')
         # Check if file value exists and whether the list contains jinja
         file_contains_jinja = False
         if field_name in file_data and file_data[field_name] is not None:
@@ -243,7 +243,7 @@ class yaml_writer:
         output = output.replace("<~<~","'!!{{!!")
         output = output.replace("}}", "!!}}!!'")
         output = output.replace("~>~>", "!!}}!!'")
-        output = output.replace("'","!!|!!")
+        #output = output.replace("'","!!|!!")
         return output
     
     def choose_value_list_of_objects(self, file_data, field_name, db_data, db_field_name, default_value)->list:
@@ -311,9 +311,6 @@ class yaml_writer:
             return_value_list = field_value_list
         else:
             return_value_list = default_value
-
-
-
         
         return return_value_list
     
@@ -328,28 +325,79 @@ class yaml_writer:
 #[{"<~<~ref('CONTROL__GOVERNANCE__ENV')~>~>": '<~<~env~>~>'}]
 #$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 #[{'!!{{!!ref(!!|!!CONTROL__GOVERNANCE__ENV!!|!!)!!}}!!': 'DEV'}]
+
+    def choose_list_objects_file_trumps(self, input_list, file_list)->list:
+        input_dict = {}
+        if input_list is not None:
+            for input_obj in input_list:
+                for k in input_obj.keys():
+                    input_dict[k] = input_obj[k]
+            
+        file_dict = {}
+        if file_list is not None:
+            for file_obj in file_list:
+                for k in file_obj.keys():
+                    file_dict[k] = file_obj[k]
+
+        # key everything in file as base
+        new_dict = file_dict
+
+        #print('####################################')
+        #print(input_dict)
+        #print('##')
+        #print(new_dict)
+        #print('####################################')
+        # loop through input to see if anything needs to be added
+        input_keys = input_dict.keys()
+        for input_key in input_keys:
+            new_item = {}
+            if input_key not in file_dict:
+                # Only add missing - it's assumed in this case that anythin in the file
+                # that is different from the input was manually overridden and should keep
+                # the file value
+                new_dict[input_key] = input_dict[input_key]
+
+
+        new_list = []
+        for new_key in new_dict.keys():
+            new_val = new_dict[new_key]
+            new_list.append({new_key:new_val})
+
+        return new_list
+        
+
     def choose_list_objects(self, db_list, file_list)->list:
+        # NOTE: this logic uses the db_list as the base .. so anything not in the db list will 
+        #       essentially get overridden. For the IMPORT that's fine as whatever is in the db
+        #       at the time of import should trump.  But for a CLASSIFY, where this is a partial 
+        #       entry and the file values not in the classification need to stand, this won't work.
         new_list = []
         # convert list of dicts to a single dict (to search dict later)
         db_dict = {}
-        for db_obj in db_list:
-            for k in db_obj.keys():
-                db_dict[k] = db_obj[k]
+        if db_list is not None:
+            for db_obj in db_list:
+                for k in db_obj.keys():
+                    db_dict[str(k)] = db_obj[k]
             
         file_dict = {}
-        for file_obj in file_list:
-            for k in file_obj.keys():
-                file_dict[k] = file_obj[k]
-
+        if file_list is not None:
+            for file_obj in file_list:
+                for k in file_obj.keys():
+                    file_dict[str(k)] = file_obj[k]
+        
         db_keys = db_dict.keys()
+        #print(db_keys)
+        #print(file_dict.keys())
         for db_key in db_keys:
             new_item = {}
             db_key_converted = self.convert_for_yaml_write(db_key)
-            if db_key in file_dict.keys():
+            if db_key_converted in file_dict.keys():
                 if '<~<~' in file_dict[db_key]: # file value exists and contains jinja --> use file version
                     new_item[db_key_converted] = self.convert_for_yaml_write(file_dict[db_key])
+                    #print('YYYYY')
                 else: # file valuel exists but does NOT contain jinja --> use db value to override
                     new_item[db_key_converted] = self.convert_for_yaml_write(db_dict[db_key])
+                    #print('NNNNN')
             else: # value only exists in db (file is blank) --> take db value
                 new_item[db_key_converted] = self.convert_for_yaml_write(db_dict[db_key])
             new_item[db_key_converted] = var.VALUE_QUALIFIER + new_item[db_key_converted] + var.VALUE_QUALIFIER
@@ -362,14 +410,14 @@ class yaml_writer:
     def choose_value_list_delete(self, file_data, field_name, db_data, db_field_name, default_value)->list:
         use_file_data = False
         
-        print('###### file_data ########')   
-        print(file_data)
-        print('###### field_name ########')
-        print(field_name)
-        print('###### db_data ########')
-        print(db_data)
-        print('###### db_field_name ########')
-        print(db_field_name)
+        #print('###### file_data ########')   
+        #print(file_data)
+        #print('###### field_name ########')
+        #print(field_name)
+        #print('###### db_data ########')
+        #print(db_data)
+        #print('###### db_field_name ########')
+        #print(db_field_name)
         #d['ALLOWED_VALUES'] if (tag['ALLOWED_VALUES'] is not None and tag['ALLOWED_VALUES'] != []) else var.EMPTY_STRING
 
         if db_field_name not in db_data:

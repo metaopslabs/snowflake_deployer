@@ -198,6 +198,43 @@ class configurator:
                 new_db = ENV_DATABASE_PREFIX + db
                 IMPORT_DATABASES.append(new_db)
 
+        CLASSIFY_MAX_SAMPLE_SIZE = self._get_param_from_env_or_config(config_file, 'CLASSIFY_MAX_SAMPLE_SIZE', '10000')
+
+        CLASSIFY_DATABASES_RAW = self._get_param_from_env_or_config_list(config_file, 'CLASSIFY_DATABASES')
+        CLASSIFY_DATABASES = []
+        for db in CLASSIFY_DATABASES_RAW:
+            if db.startswith(ENV_DATABASE_PREFIX):
+                CLASSIFY_DATABASES.append(db)
+            else:
+                new_db = ENV_DATABASE_PREFIX + db
+                CLASSIFY_DATABASES.append(new_db)
+
+        CLASSIFY_TAGS_DB_SCHEMA = self._get_param_from_env_or_config(config_file, 'CLASSIFY_TAGS_DB_SCHEMA', '')
+        if CLASSIFY_TAGS_DB_SCHEMA != '' and len(CLASSIFY_TAGS_DB_SCHEMA.split('.')) == 2:
+            CLASSIFY_TAGS_DB_RAW = CLASSIFY_TAGS_DB_SCHEMA.split('.')[0]
+            if CLASSIFY_TAGS_DB_RAW.startswith(ENV_DATABASE_PREFIX):
+                CLASSIFY_TAGS_DB = CLASSIFY_TAGS_DB_RAW
+            else:
+                CLASSIFY_TAGS_DB = ENV_DATABASE_PREFIX + CLASSIFY_TAGS_DB_RAW
+            CLASSIFY_TAGS_SCHEMA = CLASSIFY_TAGS_DB_SCHEMA.split('.')[1]
+        else: 
+            CLASSIFY_TAGS_DB = ''
+            CLASSIFY_TAGS_SCHEMA = ''
+
+        CLASSIFY_IGNORE_TAGS_RAW = self._get_param_from_env_or_config_list(config_file, 'CLASSIFY_IGNORE_TAGS')
+        CLASSIFY_IGNORE_TAGS = []
+        for tag in CLASSIFY_IGNORE_TAGS_RAW:
+            if len(tag.split('.')) == 3:
+                tag_db = tag.split('.')[0]
+                tag_schema = tag.split('.')[1]
+                tag_object = tag.split('.')[2]
+                    
+                if tag_db.startswith(ENV_DATABASE_PREFIX):
+                    CLASSIFY_IGNORE_TAGS.append(tag)
+                else:
+                    new_tag = ENV_DATABASE_PREFIX + tag_db + '.' + tag_schema + '.' + tag_object
+                    CLASSIFY_IGNORE_TAGS.append(new_tag)
+
         if HANDLE_OWNERSHIP_RAW.upper() == 'GRANT':
             HANDLE_OWNERSHIP = HANDLE_OWNERSHIP_OPTION.GRANT
         elif HANDLE_OWNERSHIP_RAW.upper() == 'ERROR':
@@ -243,4 +280,9 @@ class configurator:
         config['VARS'] = var_dict
         config['DEPLOY_ENV'] = DEPLOY_ENV
         config['IMPORT_DATABASES'] = IMPORT_DATABASES
+        config['CLASSIFY_DATABASES'] = CLASSIFY_DATABASES
+        config['CLASSIFY_TAGS_DB'] = CLASSIFY_TAGS_DB
+        config['CLASSIFY_TAGS_SCHEMA'] = CLASSIFY_TAGS_SCHEMA
+        config['CLASSIFY_IGNORE_TAGS'] = CLASSIFY_IGNORE_TAGS
+        config['CLASSIFY_MAX_SAMPLE_SIZE'] = CLASSIFY_MAX_SAMPLE_SIZE
         return config

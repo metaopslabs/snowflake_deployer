@@ -16,7 +16,7 @@ def validate_function(self, config:dict):
         #PYTHON
         , Optional("IMPORTS"): Or(list, None)
         , Optional("HANDLER"): Or(str, None)
-        , Optional("RUNTIME_VERSION"): Or(str, None)
+        , Optional("RUNTIME_VERSION"): Or(str, float, None)
         , Optional("PACKAGES"): Or(list, None)
         , Optional("DEPLOY_ENV"): Or(list, None)
         , Optional("DEPLOY_LOCK"): Or(bool,None)

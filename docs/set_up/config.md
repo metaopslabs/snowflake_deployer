@@ -47,7 +47,13 @@ Usage - If both the command line parameter AND environment variable are set, exe
 | `HANDLE_OWNERSHIP`            | (String) How to handle the ownership of existing objects.<ul><li>For deployments in existing environments, the deployer can manage existing options.  But the DEPLOY_ROLE may not have ownership of the objects to manage. This config tells the deployer how to handle that scenario.</li><li>Default = ERROR</li><li>Valid Values = [ERROR,GRANT]</li><li>GRANT = Grant ownership role of object to DEPLOY_ROLE so the DEPLOY_ROLE inherits ownership capabilities.  Be careful of any objects that are object by ACCOUNTADMIN as this tells the deployer to make DEPLOY_ROLE the parent role to ACCOUNTADMIN</li><li>ERROR = Deployer will error out if it does not have ownership privilege on objects it's managing.  These errors will need to be fixed manually by granting ownership to a role that the DEPLOY role is a parent role to.</li></ul> |
 | `DEPLOY_DATABASE_NAME`        | (String) Name of the MetaOps Deploy Database.<ul><li>Only needing configuration if modified database in the Snowflake set up script.  Else exclude.</li><li>For multiple environments within a single instance, environments can reference the same deploy db</li><li>Default = "_DEPLOY"</li></ul> |
 | `DEPLOY_ROLE`                 | (String) Name of the MetaOps Deploy Role.<ul><li>Only needing configuration if modified fole in the Snowflake set up script.  Else exclude.</li><li>For multiple environments within a single instance, environments can use the same role</li><li>Default = "INSTANCEADMIN"</li></ul>|
-| `IMPORT_DATABASES`                 | (List) List of databases to import.  If not included, all databases imported.  List values can either include or not include the ENV_DATABASE_PREFIX.  If not included, then ENV_DATABASE_PREFIX is applied when finding databases to import.|
+| `IMPORT_DATABASES`                 | (List) List of databases to import for subcommand = IMPORT only.  If not included, all databases imported.  List values can either include or not include the ENV_DATABASE_PREFIX.  If not included, then ENV_DATABASE_PREFIX is applied when finding databases to import.|
+| `CLASSIFY_DATABASES`                 | (List) List of databases to classify for subcommand = CLASSIFY only.  If not included, all databases classified.  List values can either include or not include the ENV_DATABASE_PREFIX.  If not included, then ENV_DATABASE_PREFIX is applied when finding databases to classify.|
+| `CLASSIFY_TAGS_DB_SCHEMA`                 | (String) Database.Schema location of where governance tags to be stored for subcommand = CLASSIFY only.  Classify command auto creates necessary tags.|
+| `CLASSIFY_IGNORE_TAGS`                 | (List) List of tags to signify that column should be ignored from classification for subcommand = CLASSIFY only.|
+| `CLASSIFY_MAX_SAMPLE_SIZE`                 | (Int) Max sample size of Snowflake's auto-classification for subcommand = CLASSIFY only.  This helps reduce processing time of classification.  Default = 10000 |
+
+ 
 
 
 ## Example config
@@ -67,6 +73,9 @@ IMPORT_DATABASES:
 - CONTROL
 - RAW
 - SECURITY
+CLASSIFY_DATABASES:
+- ANALYTICS
+- RAW
 DEPLOY_ENV: dev
 VARS:
 - my_comment: some dev comment

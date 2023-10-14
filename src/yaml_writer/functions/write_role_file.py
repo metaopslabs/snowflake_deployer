@@ -10,9 +10,13 @@ def write_role_file(self, d:dict):
 
     data['OWNER'] = self.choose_value_string(data, 'OWNER', d,'OWNER', var.EMPTY_STRING)
     data['COMMENT'] = self.choose_value_string(data, 'COMMENT', d, 'COMMENT', var.EMPTY_STRING)
-    data['PARENT_ROLES'] = self.choose_value_string(data, 'PARENT_ROLES', d, 'PARENT_ROLES', var.EMPTY_STRING)
-    
-    if d['TAGS'] != []:
+    #data['PARENT_ROLES'] = self.choose_value_string(data, 'PARENT_ROLES', d, 'PARENT_ROLES', var.EMPTY_STRING)
+    data['CHILD_ROLES'] = self.choose_value_list(data, 'CHILD_ROLES', d, 'CHILD_ROLES', var.EMPTY_LIST)
+    #print('#### RAW ####')
+    #print(d['CHILD_ROLES'])
+    #print('#### MODIFIED ####')
+    #print(data['CHILD_ROLES'])
+    if 'TAGS' in d and d['TAGS'] != []:
         if 'TAGS' in data:
             data['TAGS'] = self.choose_list_objects(d['TAGS'], data['TAGS'])
         else:

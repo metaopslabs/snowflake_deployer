@@ -2,7 +2,9 @@ from pathlib import Path
 import yaml
 #import ruamel.yaml
 import src.common.processing_vars as var
-def write_tag_file(self,database_name:str, schema_name:str, d: dict):
+import os.path
+
+def write_tag_file(self,database_name:str, schema_name:str, d: dict, ignore_existing:bool=False):
     yml_path = 'snowflake/data/' + database_name + '/' + schema_name + '/TAGS/' + database_name + '__' + schema_name + '__' + d['TAG_NAME'] + '.yml'
     #print('@@@@@@@@ WRITE TAG @@@@@@@@@@@@@@@@@')
     #print(d)
@@ -31,8 +33,10 @@ def write_tag_file(self,database_name:str, schema_name:str, d: dict):
     #yaml_string_converted = yaml_string_converted.replace("'"+var.EMPTY_STRING+"'",'')
     yaml_string_converted = self.convert_special_characters_back_in_file(yaml_string)
     
-    with open(yml_path, "w+") as f:
-        f.write(yaml_string_converted)
+    tag_file_exists = os.path.isfile(yml_path)
+    if not(tag_file_exists and ignore_existing):
+        with open(yml_path, "w+") as f:
+            f.write(yaml_string_converted)
 
     #with Path(yml_path).open("w", encoding="utf-8") as f:
     #    yaml.dump(data,f,default_style=None,default_flow_style=False, sort_keys=False)

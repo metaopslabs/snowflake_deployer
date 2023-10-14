@@ -1,4 +1,4 @@
-def role_alter(self,role_name, owner:str, comment:str, parent_roles:list, tags:list):
+def role_alter(self,role_name, owner:str, comment:str, child_roles:list, tags:list):
     cur = self._conn.cursor()
     query = ''
     try:
@@ -18,9 +18,9 @@ def role_alter(self,role_name, owner:str, comment:str, parent_roles:list, tags:l
                 params = (role_name,tag_key,tag_val)
                 cur.execute(query,params)
 
-        if parent_roles is not None and parent_roles != []:
-            for parent_role in parent_roles:
-                query = "GRANT ROLE " + role_name + " TO ROLE " + parent_role + ";"
+        if child_roles is not None and child_roles != []:
+            for child_role in child_roles:
+                query = "GRANT ROLE " + child_role + " TO ROLE " + role_name + ";"
                 cur.execute(query)
                 
         if owner is not None:

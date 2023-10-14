@@ -1,7 +1,7 @@
 from snowflake.connector import DictCursor
 import json
 
-def role_parent_grants_get(self,full_role_name:str)->dict:
+def role_parent_grants_get(self,full_role_name:str)->list:
     cur = self._conn.cursor(DictCursor)
 
     data = []

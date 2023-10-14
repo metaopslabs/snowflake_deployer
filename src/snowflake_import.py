@@ -13,244 +13,254 @@ import time
 import traceback
 
 def task_warehouse(semaphore, writer, sf, config:dict, tn:str, wh:dict, logger):
-    thread_start_time = time.time()
-    thread_name = threading.current_thread().name
-    try:
-        logger.log(thread_name,'Start')
-        writer.write_warehouse_file(wh)
-        
-        msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-    except Exception as ex:
-        traceback_text = traceback.format_exc() # get error traceback
-        msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-        logger.log_error(str(ex), thread_name, traceback_text)
+    with semaphore:
+        thread_start_time = time.time()
+        thread_name = threading.current_thread().name
+        try:
+            logger.log(thread_name,'Start')
+            writer.write_warehouse_file(wh)
+            
+            msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+        except Exception as ex:
+            traceback_text = traceback.format_exc() # get error traceback
+            msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+            logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_role(semaphore, writer, sf, config:dict, tn:str, r:dict, logger):
-    thread_start_time = time.time()
-    thread_name = threading.current_thread().name
-    try:
-        logger.log(thread_name,'Start')
-        writer.write_role_file(r)
+    with semaphore:
+        thread_start_time = time.time()
+        thread_name = threading.current_thread().name
+        try:
+            logger.log(thread_name,'Start')
+            writer.write_role_file(r)
 
-        #print(f'Thread {name} End')
-        msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-    except Exception as ex:
-        traceback_text = traceback.format_exc() # get error traceback
-        msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-        logger.log_error(str(ex), thread_name, traceback_text)
+            #print(f'Thread {name} End')
+            msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+        except Exception as ex:
+            traceback_text = traceback.format_exc() # get error traceback
+            msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+            logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_db(semaphore, writer, sf, config:dict, tn:str, db:dict, current_role:str, available_roles:list, logger):
-    thread_start_time = time.time()
-    thread_name = threading.current_thread().name
-    try:
-        logger.log(thread_name,'Start')
+    with semaphore:
+        thread_start_time = time.time()
+        thread_name = threading.current_thread().name
+        try:
+            logger.log(thread_name,'Start')
 
-        writer.write_database_file(db)
-            
-        #####################################################
-        # Schemas
-        #schemas = sf.schemas_get(db['DATABASE_NAME'],config['DEPLOY_DATABASE_NAME'],config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
-        schemas = wrangler.wrangle_schema(db['DATABASE_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-    
-        for schema in schemas:
-            if schema['SCHEMA_NAME'] not in ['INFORMATION_SCHEMA']:  
-                tn2 = db['DATABASE_NAME'] + '.' + schema['SCHEMA_NAME'] + ' [schema]'
-                t2 = threading.Thread(target=task_schema, name=tn2, args=(semaphore, writer, sf, config, tn2, db['DATABASE_NAME'], db['DATABASE_NAME_SANS_ENV'], schema, current_role, available_roles, logger))
-                t2.start()
+            writer.write_database_file(db)
+                
+            #####################################################
+            # Schemas
+            #schemas = sf.schemas_get(db['DATABASE_NAME'],config['DEPLOY_DATABASE_NAME'],config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
+            schemas = wrangler.wrangle_schema(db['DATABASE_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+        
+            for schema in schemas:
+                if schema['SCHEMA_NAME'] not in ['INFORMATION_SCHEMA']:  
+                    tn2 = db['DATABASE_NAME'] + '.' + schema['SCHEMA_NAME'] + ' [schema]'
+                    t2 = threading.Thread(target=task_schema, name=tn2, args=(semaphore, writer, sf, config, tn2, db['DATABASE_NAME'], db['DATABASE_NAME_SANS_ENV'], schema, current_role, available_roles, logger))
+                    t2.start()
 
-        #print(f'Thread {name} End')
-        msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-    except Exception as ex:
-        traceback_text = traceback.format_exc() # get error traceback
-        msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-        logger.log_error(str(ex), thread_name, traceback_text)
+            #print(f'Thread {name} End')
+            msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+        except Exception as ex:
+            traceback_text = traceback.format_exc() # get error traceback
+            msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+            logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, database_name_sans_env:str, schema:dict, current_role:str, available_roles:list, logger):
-    thread_start_time = time.time()
-    thread_name = threading.current_thread().name
-    try:
-        logger.log(thread_name,'Start')
+    with semaphore:
+        thread_start_time = time.time()
+        thread_name = threading.current_thread().name
+        try:
+            logger.log(thread_name,'Start')
 
-        writer.write_schema_file(database_name_sans_env, schema)
+            writer.write_schema_file(database_name_sans_env, schema)
 
-        #####################################################
-        # Tags
-        #tags = sf.tags_get(database_name, schema['SCHEMA_NAME'], current_role, available_roles, ignore_roles_list)
-        tags = wrangler.wrangle_tag(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-        for tag in tags:
-            #print('^^^^^^^^^ BEFORE WRITE TAG FILE ^^^^^^^^^^')
-            #print(tag)
-            #print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
-            writer.write_tag_file(database_name_sans_env, schema['SCHEMA_NAME'], tag)
+            #####################################################
+            # Tags
+            #tags = sf.tags_get(database_name, schema['SCHEMA_NAME'], current_role, available_roles, ignore_roles_list)
+            tags = wrangler.wrangle_tag(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            for tag in tags:
+                #print('^^^^^^^^^ BEFORE WRITE TAG FILE ^^^^^^^^^^')
+                #print(tag)
+                #print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+                writer.write_tag_file(database_name_sans_env, schema['SCHEMA_NAME'], tag)
 
-        #####################################################
-        # Objects (tables and views)
-        #objects = sf.objects_get(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
-        objects = wrangler.wrangle_object(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-        for obj in objects:
-            tn2 = database_name + '.' + schema['SCHEMA_NAME'] + '.' + obj['OBJECT_NAME'] + ' [object]'
-            t2 = threading.Thread(target=task_object, name=tn2, args=(semaphore, writer, sf, config, tn2, database_name, database_name_sans_env, schema['SCHEMA_NAME'], obj, logger))
-            t2.start()
+            #####################################################
+            # Objects (tables and views)
+            #objects = sf.objects_get(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
+            objects = wrangler.wrangle_object(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            for obj in objects:
+                tn2 = database_name + '.' + schema['SCHEMA_NAME'] + '.' + obj['OBJECT_NAME'] + ' [object]'
+                t2 = threading.Thread(target=task_object, name=tn2, args=(semaphore, writer, sf, config, tn2, database_name, database_name_sans_env, schema['SCHEMA_NAME'], obj, logger))
+                t2.start()
 
-        #####################################################
-        # Stored Procs
-        #ps = sf.procedures_get(database_name, schema['SCHEMA_NAME'], config['ENV_PROCEDURE_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
-        procs = wrangler.wrangle_procedure(database_name, schema['SCHEMA_NAME'], config['ENV_PROCEDURE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-        for p in procs:
-            tnp = database_name + '.' + schema['SCHEMA_NAME'] + '.' + p['PROCEDURE_NAME'] + p['PROCEDURE_SIGNATURE_TYPES'] + ' [sp]'
-            t3 = threading.Thread(target=task_procedure, name=tnp, args=(semaphore, writer, sf, config, tnp, database_name, database_name_sans_env, schema['SCHEMA_NAME'], p, logger))
-            t3.start()
-        
-        #####################################################
-        # Functions
-        #fs = sf.functions_get(database_name, schema['SCHEMA_NAME'], config['ENV_FUNCTION_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
-        funcs = wrangler.wrangle_function(database_name, schema['SCHEMA_NAME'], config['ENV_FUNCTION_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-        for f in funcs:
-            tnf = database_name + '.' + schema['SCHEMA_NAME'] + '.' + f['FUNCTION_NAME'] + f['FUNCTION_SIGNATURE_TYPES'] + ' [func]'
-            t4 = threading.Thread(target=task_function, name=tnf, args=(semaphore, writer, sf, config, tnf, database_name, database_name_sans_env, schema['SCHEMA_NAME'], f, logger))
-            t4.start()
+            #####################################################
+            # Stored Procs
+            #ps = sf.procedures_get(database_name, schema['SCHEMA_NAME'], config['ENV_PROCEDURE_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
+            procs = wrangler.wrangle_procedure(database_name, schema['SCHEMA_NAME'], config['ENV_PROCEDURE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            for p in procs:
+                tnp = database_name + '.' + schema['SCHEMA_NAME'] + '.' + p['PROCEDURE_NAME'] + p['PROCEDURE_SIGNATURE_TYPES'] + ' [sp]'
+                t3 = threading.Thread(target=task_procedure, name=tnp, args=(semaphore, writer, sf, config, tnp, database_name, database_name_sans_env, schema['SCHEMA_NAME'], p, logger))
+                t3.start()
+            
+            #####################################################
+            # Functions
+            #fs = sf.functions_get(database_name, schema['SCHEMA_NAME'], config['ENV_FUNCTION_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
+            funcs = wrangler.wrangle_function(database_name, schema['SCHEMA_NAME'], config['ENV_FUNCTION_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            for f in funcs:
+                tnf = database_name + '.' + schema['SCHEMA_NAME'] + '.' + f['FUNCTION_NAME'] + f['FUNCTION_SIGNATURE_TYPES'] + ' [func]'
+                t4 = threading.Thread(target=task_function, name=tnf, args=(semaphore, writer, sf, config, tnf, database_name, database_name_sans_env, schema['SCHEMA_NAME'], f, logger))
+                t4.start()
 
-        #####################################################
-        # Tasks
-        tasks = wrangler.wrangle_task(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-        for tsk in tasks:
-            tntsk = database_name + '.' + schema['SCHEMA_NAME'] + '.' + tsk['TASK_NAME'] + ' [task]'
-            t5 = threading.Thread(target=task_task, name=tntsk, args=(semaphore, writer, sf, config, tntsk, database_name, database_name_sans_env, schema['SCHEMA_NAME'], tsk, logger))
-            t5.start()
+            #####################################################
+            # Tasks
+            tasks = wrangler.wrangle_task(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            for tsk in tasks:
+                tntsk = database_name + '.' + schema['SCHEMA_NAME'] + '.' + tsk['TASK_NAME'] + ' [task]'
+                t5 = threading.Thread(target=task_task, name=tntsk, args=(semaphore, writer, sf, config, tntsk, database_name, database_name_sans_env, schema['SCHEMA_NAME'], tsk, logger))
+                t5.start()
 
-        #####################################################
-        # Masking Policies
-        masking_policies = wrangler.wrangle_masking_policy(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-        for mpol in masking_policies:
-            tnmp = database_name + '.' + schema['SCHEMA_NAME'] + '.' + mpol['MASKING_POLICY_NAME'] + ' [masking policy]'
-            t6 = threading.Thread(target=task_masking_policy, name=tnmp, args=(semaphore, writer, sf, config, tnmp, database_name, database_name_sans_env, schema['SCHEMA_NAME'], mpol, logger))
-            t6.start()
+            #####################################################
+            # Masking Policies
+            masking_policies = wrangler.wrangle_masking_policy(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            for mpol in masking_policies:
+                tnmp = database_name + '.' + schema['SCHEMA_NAME'] + '.' + mpol['MASKING_POLICY_NAME'] + ' [masking policy]'
+                t6 = threading.Thread(target=task_masking_policy, name=tnmp, args=(semaphore, writer, sf, config, tnmp, database_name, database_name_sans_env, schema['SCHEMA_NAME'], mpol, logger))
+                t6.start()
 
-        #####################################################
-        # Row Access Policies
-        row_access_policies = wrangler.wrangle_row_access_policy(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-        for rap in row_access_policies:
-            tnrap = database_name + '.' + schema['SCHEMA_NAME'] + '.' + rap['ROW_ACCESS_POLICY_NAME'] + ' [row access policy]'
-            t7 = threading.Thread(target=task_row_access_policy, name=tnrap, args=(semaphore, writer, sf, config, tnrap, database_name, database_name_sans_env, schema['SCHEMA_NAME'], rap, logger))
-            t7.start()
+            #####################################################
+            # Row Access Policies
+            row_access_policies = wrangler.wrangle_row_access_policy(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            for rap in row_access_policies:
+                tnrap = database_name + '.' + schema['SCHEMA_NAME'] + '.' + rap['ROW_ACCESS_POLICY_NAME'] + ' [row access policy]'
+                t7 = threading.Thread(target=task_row_access_policy, name=tnrap, args=(semaphore, writer, sf, config, tnrap, database_name, database_name_sans_env, schema['SCHEMA_NAME'], rap, logger))
+                t7.start()
 
-        #print(f'Thread {name} End')
-        msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-    except Exception as ex:
-        traceback_text = traceback.format_exc() # get error traceback
-        msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-        logger.log_error(str(ex), thread_name, traceback_text)
+            #print(f'Thread {name} End')
+            msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+        except Exception as ex:
+            traceback_text = traceback.format_exc() # get error traceback
+            msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+            logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_object(semaphore, writer, sf, config:dict, tn, database_name:str, database_name_sans_env:str, schema_name:str, obj:dict, logger):
-    thread_start_time = time.time()
-    thread_name = threading.current_thread().name
-    try:
-        logger.log(thread_name,'Start')
-        #obj['COLUMNS'] = sf.columns_get(database_name, schema_name, obj['OBJECT_NAME'], config['ENV_DATABASE_PREFIX'])
-        obj['COLUMNS'] = wrangler.wrangle_column(database_name, schema_name, obj['OBJECT_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-        writer.write_object_file(database_name_sans_env, schema_name, obj, config['OBJECT_METADATA_ONLY'])
+    with semaphore:
+        thread_start_time = time.time()
+        thread_name = threading.current_thread().name
+        try:
+            logger.log(thread_name,'Start')
+            #obj['COLUMNS'] = sf.columns_get(database_name, schema_name, obj['OBJECT_NAME'], config['ENV_DATABASE_PREFIX'])
+            obj['COLUMNS'] = wrangler.wrangle_column(database_name, schema_name, obj['OBJECT_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            writer.write_object_file(database_name_sans_env, schema_name, obj, config['OBJECT_METADATA_ONLY'], False)
 
-        #print(f'Thread {name} End')
-        msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-    except Exception as ex:
-        traceback_text = traceback.format_exc() # get error traceback
-        msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-        logger.log_error(str(ex), thread_name, traceback_text)
+            #print(f'Thread {name} End')
+            msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+        except Exception as ex:
+            traceback_text = traceback.format_exc() # get error traceback
+            msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+            logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_procedure(semaphore, writer, sf, config:dict, tn:str, database_name:str, database_name_sans_env:str, schema_name:str, p:dict, logger):
-    thread_start_time = time.time()
-    thread_name = threading.current_thread().name
-    try:
-        logger.log(thread_name,'Start')
+    with semaphore:
+        thread_start_time = time.time()
+        thread_name = threading.current_thread().name
+        try:
+            logger.log(thread_name,'Start')
 
-        writer.write_procedure_file(database_name_sans_env, schema_name, p)
+            writer.write_procedure_file(database_name_sans_env, schema_name, p)
 
-        #print(f'Thread {name} End')
-        msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-    except Exception as ex:
-        traceback_text = traceback.format_exc() # get error traceback
-        msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-        logger.log_error(str(ex), thread_name, traceback_text)
+            #print(f'Thread {name} End')
+            msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+        except Exception as ex:
+            traceback_text = traceback.format_exc() # get error traceback
+            msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+            logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_function(semaphore, writer, sf, config:dict, tn:str, database_name:str, database_name_sans_env:str, schema_name:str, f:dict, logger):
-    thread_start_time = time.time()
-    thread_name = threading.current_thread().name
-    try:
-        logger.log(thread_name,'Start')
+    with semaphore:
+        thread_start_time = time.time()
+        thread_name = threading.current_thread().name
+        try:
+            logger.log(thread_name,'Start')
 
-        writer.write_function_file(database_name_sans_env, schema_name, f)
+            writer.write_function_file(database_name_sans_env, schema_name, f)
 
-        #print(f'Thread {name} End')
-        msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-    except Exception as ex:
-        traceback_text = traceback.format_exc() # get error traceback
-        msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-        logger.log_error(str(ex), thread_name, traceback_text)
+            #print(f'Thread {name} End')
+            msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+        except Exception as ex:
+            traceback_text = traceback.format_exc() # get error traceback
+            msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+            logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_task(semaphore, writer, sf, config:dict, tn:str, database_name:str, database_name_sans_env:str, schema_name:str, tsk:dict, logger):
-    thread_start_time = time.time()
-    thread_name = threading.current_thread().name
-    try:
-        logger.log(thread_name,'Start')
+    with semaphore:
+        thread_start_time = time.time()
+        thread_name = threading.current_thread().name
+        try:
+            logger.log(thread_name,'Start')
 
-        writer.write_task_file(database_name_sans_env, schema_name, tsk)
+            writer.write_task_file(database_name_sans_env, schema_name, tsk)
 
-        #print(f'Thread {name} End')
-        msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-    except Exception as ex:
-        traceback_text = traceback.format_exc() # get error traceback
-        msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-        logger.log_error(str(ex), thread_name, traceback_text)
+            #print(f'Thread {name} End')
+            msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+        except Exception as ex:
+            traceback_text = traceback.format_exc() # get error traceback
+            msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+            logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_masking_policy(semaphore, writer, sf, config:dict, tn:str, database_name:str, database_name_sans_env:str, schema_name:str, mp:dict, logger):
-    thread_start_time = time.time()
-    thread_name = threading.current_thread().name
-    try:
-        logger.log(thread_name,'Start')
+    with semaphore:
+        thread_start_time = time.time()
+        thread_name = threading.current_thread().name
+        try:
+            logger.log(thread_name,'Start')
 
-        writer.write_masking_policy_file(database_name_sans_env, schema_name, mp)
+            writer.write_masking_policy_file(database_name_sans_env, schema_name, mp)
 
-        #print(f'Thread {name} End')
-        msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-    except Exception as ex:
-        traceback_text = traceback.format_exc() # get error traceback
-        msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-        logger.log_error(str(ex), thread_name, traceback_text)
+            #print(f'Thread {name} End')
+            msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+        except Exception as ex:
+            traceback_text = traceback.format_exc() # get error traceback
+            msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+            logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_row_access_policy(semaphore, writer, sf, config:dict, tn:str, database_name:str, database_name_sans_env:str, schema_name:str, rap:dict, logger):
-    thread_start_time = time.time()
-    thread_name = threading.current_thread().name
-    try:
-        logger.log(thread_name,'Start')
+    with semaphore:
+        thread_start_time = time.time()
+        thread_name = threading.current_thread().name
+        try:
+            logger.log(thread_name,'Start')
 
-        writer.write_row_access_policy_file(database_name_sans_env, schema_name, rap)
+            writer.write_row_access_policy_file(database_name_sans_env, schema_name, rap)
 
-        #print(f'Thread {name} End')
-        msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-    except Exception as ex:
-        traceback_text = traceback.format_exc() # get error traceback
-        msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
-        logger.log(thread_name,msg)
-        logger.log_error(str(ex), thread_name, traceback_text)
+            #print(f'Thread {name} End')
+            msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+        except Exception as ex:
+            traceback_text = traceback.format_exc() # get error traceback
+            msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
+            logger.log(thread_name,msg)
+            logger.log_error(str(ex), thread_name, traceback_text)
 
 
 def snowflake_import(args:dict):
@@ -283,6 +293,7 @@ def snowflake_import(args:dict):
         global available_roles
         global ignore_roles_list 
 
+        logging.info('Connecting to Snowflake')
         sf = sf_client(config['SNOWFLAKE_PRIVATE_KEY'], config['SNOWFLAKE_PRIVATE_KEY_PASSWORD'], config['SNOWFLAKE_ACCOUNT'], config['SNOWFLAKE_USERNAME'], config['SNOWFLAKE_WAREHOUSE'], config['database'], config['schema'] )
         wrangler = wrangler(sf)
         #print('Connected to Snowflake')
@@ -309,7 +320,8 @@ def snowflake_import(args:dict):
 
         #####################################################
         # DATA START
-        
+        logger.log('','Beginning to retrieve Snowflake metadata')
+
         # Databases
         #dbs = sf.databases_get(excluded_databases,config['DEPLOY_DATABASE_NAME'],config['ENV_DATABASE_PREFIX'], ignore_roles_list)
         dbs = wrangler.wrangle_database(config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], excluded_databases, config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'], import_databases)

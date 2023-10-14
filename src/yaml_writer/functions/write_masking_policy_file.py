@@ -22,7 +22,7 @@ def write_masking_policy_file(self, database_name_sans_env:str, schema_name:str,
     #print(d['TAGS'])
     #print('#################################################')
     body = d['BODY']
-    if d['TAGS'] != []:
+    if 'TAGS' in d and d['TAGS'] != []:
         if 'TAGS' in data:
             data['TAGS'] = self.choose_list_objects(d['TAGS'], data['TAGS'])
         else:
@@ -30,7 +30,7 @@ def write_masking_policy_file(self, database_name_sans_env:str, schema_name:str,
     else:
         data['TAGS']=var.EMPTY_STRING
 
-    if d['GRANTS'] != []:
+    if 'GRANTS' in d and d['GRANTS'] != []:
         if 'GRANTS' in data:
             data['GRANTS'] = self.choose_list_objects(d['GRANTS'], data['GRANTS'])
         else:

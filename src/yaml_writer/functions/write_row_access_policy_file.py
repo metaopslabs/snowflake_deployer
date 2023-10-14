@@ -18,7 +18,7 @@ def write_row_access_policy_file(self, database_name_sans_env:str, schema_name:s
     data['COMMENT'] = self.choose_value_string(data, 'COMMENT', d, 'COMMENT', var.EMPTY_STRING)
      
     body = d['BODY']
-    if d['TAGS'] != []:
+    if 'TAGS' in d and d['TAGS'] != []:
         if 'TAGS' in data:
             data['TAGS'] = self.choose_list_objects(d['TAGS'], data['TAGS'])
         else:
@@ -26,7 +26,7 @@ def write_row_access_policy_file(self, database_name_sans_env:str, schema_name:s
     else:
         data['TAGS']=var.EMPTY_STRING
 
-    if d['GRANTS'] != []:
+    if 'GRANTS' in d and d['GRANTS'] != []:
         if 'GRANTS' in data:
             data['GRANTS'] = self.choose_list_objects(d['GRANTS'], data['GRANTS'])
         else:

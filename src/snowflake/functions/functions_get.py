@@ -1,4 +1,5 @@
 from snowflake.connector import DictCursor
+import json
 
 def functions_get(self,database_name:str, schema_name:str)->dict:
     cur = self._conn.cursor(DictCursor)

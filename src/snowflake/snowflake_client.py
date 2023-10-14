@@ -47,7 +47,7 @@ class snowflake_client:
             raise
     
     def create_sql_error_msg(self, msg:str, query:str )->str:
-        msg = 'SQL Error:\n\nQuery: ' + query + '\n\nError Message:\n' + str(ex) + '\n\n'
+        msg = 'SQL Error:\n\nQuery: ' + query + '\n\nError Message:\n' + str(msg) + '\n\n'
         return msg
 
     def __del__(self):
@@ -80,7 +80,9 @@ class snowflake_client:
     from .functions.masking_policy_alter import masking_policy_alter
     from .functions.masking_policy_create import masking_policy_create
     from .functions.masking_policy_check_exists import masking_policy_check_exists
+    from .functions.object_classify import object_classify
     from .functions.objects_get import objects_get
+    from .functions.objects_to_classify import objects_to_classify
     from .functions.object_alter import object_alter
     from .functions.object_check_exists import object_check_exists
     from .functions.ownership_transfer import ownership_transfer
@@ -93,6 +95,7 @@ class snowflake_client:
     from .functions.roles_get import roles_get
     from .functions.role_check_exists import role_check_exists
     from .functions.role_alter import role_alter
+    from .functions.role_child_grants_get import role_child_grants_get
     from .functions.role_create import role_create
     from .functions.role_check_assigned import role_check_assigned
     from .functions.role_grant_to_role import role_grant_to_role
