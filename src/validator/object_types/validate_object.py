@@ -11,10 +11,11 @@ def validate_object(self, config:dict):
         , Optional("TAGS"): Or(list[str], None)
         , Optional("COLUMNS"): Or(list[str], None)
         , Optional("GRANTS"): Or(list, None)
-        , Optional("ROW_ACCESS_POLICY"): Or(str, None)
-        , Optional("ROW_ACCESS_POLICY_COLUMNS"): Or(list, None)
+        #, Optional("ROW_ACCESS_POLICY"): Or(str, None)
+        #, Optional("ROW_ACCESS_POLICY_COLUMNS"): Or(list, None)
         , Optional("DEPLOY_ENV"): Or(list, None)
         , Optional("DEPLOY_LOCK"): Or(bool, None)
+        , Optional("ROW_ACCESS_POLICY"): Or(dict, None)
     })
        
     try:

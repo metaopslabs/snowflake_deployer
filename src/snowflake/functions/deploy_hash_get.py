@@ -3,6 +3,7 @@
 def deploy_hash_get(self,deploy_db_name:str, object:str, object_type:str)->str:
     cur = self._conn.cursor()
     full_tag_name = deploy_db_name + '.TAG.DEPLOY_HASH'
+
     query = '''
         SELECT system$get_tag(%s, %s, %s) as TAG_VALUE;
     '''

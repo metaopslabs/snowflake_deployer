@@ -154,6 +154,10 @@ def task(semaphore, tn:str, ref_id:str, data:dict, completed:list, processing:li
 
 
                     if data[ref_id]['obj_type'] in ('procedure','function','masking_policy','row_access_policy','task'):
+                        #if data[ref_id]['obj_type'] == 'row_access_policy':
+                        #    #print('#################################')
+                        #    #print(data[ref_id])
+                        #    #print('#################################')
                         code_path = base_rendered_path + data[ref_id]['code_path']
                         with open(code_path, "r") as codefile:
                             body_code = codefile.read() 
@@ -497,7 +501,9 @@ def snowflake_deploy(args:dict):
                 map[ref_id]['path'] = path # if added by Nexts, need to update path of object
                 map[ref_id]['obj_type'] = obj_type
                 map[ref_id]['obj_name'] = obj_name
-                if 'code_path' in map[ref_id] and (map[ref_id]['code_path'] is None or map[ref_id]['code_path'] == ''):
+                if (code_path is not None and code_path != '' and 'code_path' in map[ref_id]) and (map[ref_id]['code_path'] is None or map[ref_id]['code_path'] == ''):
+                    map[ref_id]['code_path'] = code_path
+                elif code_path is not None and code_path != '' and 'code_path' not in map[ref_id]:
                     map[ref_id]['code_path'] = code_path
 
             for d in deps:

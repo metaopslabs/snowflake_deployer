@@ -1,5 +1,6 @@
 from src.util.util import remove_prefix
 def wrangle_object(self, database_name:str, schema_name:str, env_database_prefix:str, env_role_prefix:str, deploy_db_name:str, ignore_roles_list:str, deploy_tag_list:list[str], current_role:str, available_roles:list[str], handle_ownership)->dict:
+    # database_name should include any db prefixes
     if env_database_prefix is None:
         env_database_prefix = ''
     if env_role_prefix is None:
@@ -15,7 +16,14 @@ def wrangle_object(self, database_name:str, schema_name:str, env_database_prefix
         if o['OWNER'] not in ignore_roles_list: # if role managed by deployer (not out of the box) then add the jinja reference
             o['OWNER'] = self.create_jinja_role_instance(o['OWNER'])
         
-        
+        # Get row access policies associated with an object
+        row_access_policy = self._sf.object_row_access_policy_reference(object_name_with_db_schema)
+        o['ROW_ACCESS_POLICY'] = {}
+        if row_access_policy != {}:
+            row_access_policy_db = remove_prefix(row_access_policy['POLICY_DB'],env_database_prefix)
+            o['ROW_ACCESS_POLICY']['NAME'] = self.create_jinja_ref(row_access_policy_db, row_access_policy['POLICY_SCHEMA'], row_access_policy['POLICY_NAME'])
+            o['ROW_ACCESS_POLICY']['INPUT_COLUMNS'] = row_access_policy['INPUT_COLUMNS_LIST']
+
         tags = []
         tags_raw = self._sf.tag_references_get(database_name, object_name_with_db_schema, o['OBJECT_TYPE'])
         for t in tags_raw:
