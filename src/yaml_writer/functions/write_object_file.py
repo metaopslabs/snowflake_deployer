@@ -12,6 +12,15 @@ def write_object_file(self,database_name:str, schema_name:str, d: dict, object_m
     data['OWNER']=self.choose_value_string(data, 'OWNER', d,'OWNER', var.EMPTY_STRING)
     data['RETENTION_TIME_IN_DAYS'] = self.choose_value_string(data, 'RETENTION_TIME_IN_DAYS', d,'RETENTION_TIME_IN_DAYS', var.EMPTY_STRING)
     
+    # Can always take value from db
+    if d['ROW_ACCESS_POLICY'] == {}:
+        data['ROW_ACCESS_POLICY'] = {}
+    else:
+        row_policy_jinjafied = {}
+        row_policy_jinjafied['NAME'] = self.convert_for_yaml_write(d['ROW_ACCESS_POLICY']['NAME'])
+        row_policy_jinjafied['INPUT_COLUMNS'] = d['ROW_ACCESS_POLICY']['INPUT_COLUMNS'] 
+        data['ROW_ACCESS_POLICY'] = row_policy_jinjafied
+
     if 'TAGS' in d and d['TAGS'] != []:
         #if not override_existing_tags and 'TAGS' in data:
         #    # first grab file tags and then override with tags passed in

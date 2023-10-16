@@ -96,6 +96,7 @@ class yaml_writer:
         converted = converted.replace("'[]'",'')
         converted = converted.replace("[]",'')
         converted = converted.replace(var.VALUE_QUALIFIER,'')
+        converted = converted.replace("{}",'')
         return converted
     
     def choose_value_string(self, file_data, field_name, db_data, db_field_name, default_value)-> str:
@@ -134,7 +135,55 @@ class yaml_writer:
         return return_value_converted
 
     
+    def choose_value_dict(self, file_data, field_name, db_data, db_field_name, default_value)->dict:
+        if db_field_name not in db_data or db_data[db_field_name] == {}:
+            db_value_exists = False
+        else:
+            db_value_exists = True
+            if( type(db_data[db_field_name]) == list ):
+                db_value_list = db_data[db_field_name]
+            else:
+                if db_data[db_field_name] is None or db_data[db_field_name] == '' or db_data[db_field_name] == [] or db_data[db_field_name] == var.EMPTY_STRING:
+                    db_value_list = []
+                else:
+                    db_value_list = json.loads(db_data[db_field_name].replace("'",'"'))
+
+        file_contains_jinja = False
+        if field_name in file_data and file_data[field_name] is not None and file_data[field_name] != '' and file_data[field_name] != {}:
+            file_value_exists = True
+            if( type(file_data[field_name]) == dict ):
+                field_value_dict = file_data[field_name]
+            else:
+                if file_data[field_name] is None or file_data[field_name] == '' or file_data[field_name] == {} or file_data[field_name] == var.EMPTY_STRING:
+                    field_value_dict = {}
+                else:
+                    field_value_dict = json.loads(file_data[field_name].replace("'",'"'))
             
+            for k in field_value_dict.keys():
+                if "<~<~" in field_value_dict[k] or '{{' in field_value_dict[k]: 
+                    file_contains_jinja = True
+        else:
+            file_value_exists = False
+
+
+        if file_value_exists and file_contains_jinja:
+            # Jinja in file trumps first
+            return_value_dict = field_value_dict
+        elif db_value_exists and (db_value_dict is None or db_value_dict == []):
+            return_value_dict = default_value
+        elif db_value_exists:
+            return_value_dict = db_value_dict
+        elif file_value_exists:
+            return_value_dict = field_value_dict
+        else:
+            return_value_dict = default_value
+
+        converted_dict= {}
+        for i in return_value_dict.keys:
+            new_key = convert_for_yaml_write(i)
+            converted_dict[new_key] = self.convert_for_yaml_write(return_value_dict[i])
+        return converted_dict
+
     def choose_value_list(self, file_data, field_name, db_data, db_field_name, default_value)->list:
         use_file_data = False
         

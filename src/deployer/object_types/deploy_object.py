@@ -13,8 +13,15 @@ def deploy_object(self, object_name:str, file_hash:str, config:dict)->str:
     GRANTS = config['GRANTS'] if 'GRANTS' in config and config['GRANTS'] != '' and config['GRANTS'] is not None else []
     ENVS = config['DEPLOY_ENV'] if 'DEPLOY_ENV' in config else None
     ROW_ACCESS_POLICY = config['ROW_ACCESS_POLICY'] if 'ROW_ACCESS_POLICY' in config else None
-    ROW_ACCESS_POLICY_COLUMNS = config['ROW_ACCESS_POLICY_COLUMNS'] if 'ROW_ACCESS_POLICY_COLUMNS' in config and config['ROW_ACCESS_POLICY_COLUMNS'] != '' and config['ROW_ACCESS_POLICY_COLUMNS'] is not None else []
-
+    #ROW_ACCESS_POLICY_COLUMNS = config['ROW_ACCESS_POLICY_COLUMNS'] if 'ROW_ACCESS_POLICY_COLUMNS' in config and config['ROW_ACCESS_POLICY_COLUMNS'] != '' and config['ROW_ACCESS_POLICY_COLUMNS'] is not None else []
+    if ROW_ACCESS_POLICY is not None and ROW_ACCESS_POLICY != {}:
+        if 'NAME' not in ROW_ACCESS_POLICY:
+            raise Exception('Invalid ROW_ACCESS_POLICY in YAML config - must include NAME if deploying a row access policy')
+        if 'INPUT_COLUMNS' not in ROW_ACCESS_POLICY:
+            raise Exception('Invalid ROW_ACCESS_POLICY in YAML config - must include INPUT_COLUMNS (list) if deploying a row access policy')
+        if( type(ROW_ACCESS_POLICY['INPUT_COLUMNS']) != list ):
+            raise Exception('Invalid ROW_ACCESS_POLICY in YAML config - NPUT_COLUMNS must be a LIST of columns to input to policy')
+        
     #if DATA_RETENTION_TIME_IN_DAYS is not None and type(DATA_RETENTION_TIME_IN_DAYS) is not int:
     #    raise Exception('Invalid DATA_RETENTION_TIME_IN_DAYS in YAML config - must be a int')
     #if COMMENT is not None and type(COMMENT) is not str:
@@ -27,14 +34,14 @@ def deploy_object(self, object_name:str, file_hash:str, config:dict)->str:
     #    raise Exception('Invalid TAGS in YAML config - must be a list')
     #if COLUMNS is not None and type(COLUMNS) is not list:
     #    raise Exception('Invalid COLUMNS in YAML config - must be a list')
-    if ROW_ACCESS_POLICY is not None and ROW_ACCESS_POLICY != '':
-        if ROW_ACCESS_POLICY_COLUMNS is None or ROW_ACCESS_POLICY_COLUMNS == []:
-            raise Exception('Must include ROW_ACCESS_POLICY_COLUMNS if ROW_ACCESS_POLICY included')
+    #if ROW_ACCESS_POLICY is not None and ROW_ACCESS_POLICY != '':
+    #    if ROW_ACCESS_POLICY_COLUMNS is None or ROW_ACCESS_POLICY_COLUMNS == []:
+    #        raise Exception('Must include ROW_ACCESS_POLICY_COLUMNS if ROW_ACCESS_POLICY included')
     if ENVS is not None and self._deploy_env not in ENVS:
         return_status = 'E'
     else: 
         # Check if schema exists 
-        object_exists, sf_owner = self._sf.object_check_exists(object_name)
+        object_exists, sf_owner, last_ddl = self._sf.object_check_exists(object_name)
 
         if not object_exists:
             # Create Object
@@ -48,10 +55,13 @@ def deploy_object(self, object_name:str, file_hash:str, config:dict)->str:
             self._handle_ownership(sf_owner, 'table', object_name)
 
             # Get file hash from Snowflake & check if exist
-            sf_deploy_hash = self._sf.deploy_hash_get(self._deploy_db_name, object_name, 'table')
-            
-            if sf_deploy_hash != file_hash:
-                self._sf.object_alter(object_name, DATA_RETENTION_TIME_IN_DAYS, COMMENT, OWNER, CHANGE_TRACKING, ROW_ACCESS_POLICY, ROW_ACCESS_POLICY_COLUMNS, TAGS, GRANTS)
+            sf_deploy_hash, sf_last_update = self._sf.deploy_hash_and_last_update_get(self._deploy_db_name, object_name, 'table')
+            #print('###############')
+            #print(last_ddl)
+            #print(sf_last_update)
+            #print('##############')
+            if sf_deploy_hash != file_hash or last_ddl > sf_last_update:
+                self._sf.object_alter(object_name, DATA_RETENTION_TIME_IN_DAYS, COMMENT, OWNER, CHANGE_TRACKING, ROW_ACCESS_POLICY, TAGS, GRANTS)
                 
                 for column in COLUMNS:
                     if 'TAGS' in column: # only update column if something exists to update

@@ -21,11 +21,18 @@ Snowflake Docs - [ALTER VIEW](https://docs.snowflake.com/en/sql-reference/sql/al
 | `COMMENT`         | (String) - Optional |
 | `OWNER`         | (String) - Optional <ul><li>If HANDLE_OWNERSHIP=ERROR, be careful not to set OWNER to a role that the deployer does not have access to as it will no longer have access to manage</li></ul>|
 | `CHANGE_TRACKING`         | (Bool) - Optional |
-| `ROW_ACCESS_POLICY`         | (String) - Optional |
-| `ROW_ACCESS_POLICY_COLUMNS`         | (List[String]) - Optional |
+| `ROW_ACCESS_POLICY`         | (dict) - Optional (see below for structure) |
 | `COLUMNS`         | (COLUMN) - Optional |
 | `TAGS`         | ({KEY:VALUE}) - Optional |
 | `GRANTS`         | ({KEY:VALUE}) - Optional |
+
+
+## ROW_ACCESS_POLICY
+
+| <div style="width:175px">Parameter</div>          | Description                          |
+| ------------------------------------------------  | ------------------------------------ |
+| `NAME`         | (String) - Optional <ul><li>Name of ROW ACCESS POLICY - use jinja REF to ensure dependencies during deployment</li></ul>|
+| `INPUT_COLUMNS`         | (LIST) - Optional <ul><li>List of input columns to row access policy as row access policy can access multiple columns as input</li></ul>|
 
 Optional Parameter Defaults - if omitted, Snowflake defaults for parameters are used, just like creating an object manually.
 

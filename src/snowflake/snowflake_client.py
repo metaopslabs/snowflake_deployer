@@ -71,6 +71,7 @@ class snowflake_client:
     from .functions.deploy_db_install import deploy_db_install
     from .functions.deploy_hash_get import deploy_hash_get
     from .functions.deploy_hash_apply import deploy_hash_apply
+    from .functions.deploy_hash_and_last_update_get import deploy_hash_and_last_update_get
     from .functions.functions_get import functions_get
     from .functions.function_create import function_create
     from .functions.function_check_exists import function_check_exists
@@ -85,6 +86,7 @@ class snowflake_client:
     from .functions.objects_to_classify import objects_to_classify
     from .functions.object_alter import object_alter
     from .functions.object_check_exists import object_check_exists
+    from .functions.object_row_access_policy_reference import object_row_access_policy_reference
     from .functions.ownership_transfer import ownership_transfer
     from .functions.procedures_get import procedures_get
     from .functions.procedure_get import procedure_get

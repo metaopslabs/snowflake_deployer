@@ -1,5 +1,6 @@
 EMPTY_STRING = '!!empty!!'
 EMPTY_LIST = []
+EMPTY_DICT = {}
 HASH_TAG = '~<>~'
 DOUBLE_LEFT_BRACKETS = '<~<~'
 DOUBLE_RIGHT_BRACKETS = '~>~>'
