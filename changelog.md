@@ -14,5 +14,5 @@
 - Support for Row Access Policies on objects
 - Objects tagged with LAST_UDPATE so metadata is redeployed if DDL update since last deploy
 
-# 0.1.12
+# 0.1.12-0.1.14
 - Bugfixes

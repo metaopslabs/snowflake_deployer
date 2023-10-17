@@ -32,10 +32,10 @@ def deploy_function(self, function_name_with_signature:str, file_hash:str, file_
         RUNTIME_VERSION = None 
         PACKAGES = None
         
-    if INPUT_ARGS is not None and type(INPUT_ARGS) is not dict:
-        for i in INPUT_ARGS:
-            if ('name' not in i and 'NAME' not in i) or ('type' not in i and 'TYPE' not in i):
-                raise Exception('INPUT_ARGS must be an array of {"name":<name>,"type":<type>}')
+    #if INPUT_ARGS is not None and type(INPUT_ARGS) is not dict:
+    #    for i in INPUT_ARGS:
+    #        if ('name' not in i and 'NAME' not in i) or ('type' not in i and 'TYPE' not in i):
+    #            raise Exception('INPUT_ARGS must be an array of {"name":<name>,"type":<type>}')
     #if IS_SECURE is not None and type(IS_SECURE) is not bool:
     #    raise Exception('Invalid IS_SECURE in YAML config - must be a bool')
     # 
