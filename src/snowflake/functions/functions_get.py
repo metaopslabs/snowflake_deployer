@@ -31,8 +31,8 @@ def functions_get(self,database_name:str, schema_name:str)->dict:
             if rec['FUNCTION_LANGUAGE'] == 'PYTHON':
                 nw['RUNTIME_VERSION'] = rec['RUNTIME_VERSION']
                 nw['HANDLER'] = rec['HANDLER']
-                nw['IMPORTS'] = json.loads(rec['IMPORTS'].replace("'",'"')) 
-                nw['PACKAGES'] = json.loads(rec['PACKAGES'].replace("'",'"')) 
+                nw['IMPORTS'] = json.loads(rec['IMPORTS'].replace("'",'"')) if rec['IMPORTS'] is not None else ''
+                nw['PACKAGES'] = json.loads(rec['PACKAGES'].replace("'",'"')) if rec['PACKAGES'] is not None else ''
                 
             ARGUMENT_SIGNATURE = rec['ARGUMENT_SIGNATURE']
             ARGUMENT_SIGNATURE = ARGUMENT_SIGNATURE[1:] # remove first "("
