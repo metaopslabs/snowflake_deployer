@@ -4,10 +4,11 @@ from snowflake.connector.errors import DatabaseError, ProgrammingError
 def tag_references_get(self,tag_database_name:str, object_name:str, object_type:str)->dict:
     cur = self._conn.cursor(DictCursor)
     query = "select * from table(" + tag_database_name + ".information_schema.tag_references(%s, %s));"
+    object_type_new = 'TABLE' if object_type.upper() == 'VIEW' else object_type
 
     data=[]
     try:
-        cur.execute(query,(object_name, object_type))
+        cur.execute(query,(object_name, object_type_new))
         for rec in cur:
             tag = {}
             tag['TAG_DATABASE'] = rec['TAG_DATABASE']
