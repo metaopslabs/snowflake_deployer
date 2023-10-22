@@ -67,8 +67,8 @@ def deploy_function(self, function_name_with_signature:str, file_hash:str, file_
             # Create database
             self._sf.function_create(function_name, sql_function_name, IS_SECURE, INPUT_ARGS, RETURNS, LANGUAGE, COMMENT, BODY, IMPORTS, HANDLER, RUNTIME_VERSION, PACKAGES, OWNER, TAGS, GRANTS, self._deploy_role)
 
-            self._sf.deploy_hash_apply(sql_function_name, file_hash, 'FUNCTION', self._deploy_db_name)
-            self._sf.deploy_code_hash_apply(sql_function_name, file_hash_code, 'FUNCTION', self._deploy_db_name)
+            #self._sf.deploy_hash_apply(sql_function_name, file_hash, 'FUNCTION', self._deploy_db_name)
+            #self._sf.deploy_code_hash_apply(sql_function_name, file_hash_code, 'FUNCTION', self._deploy_db_name)
         
             return_status = 'C'
         else:
@@ -77,13 +77,15 @@ def deploy_function(self, function_name_with_signature:str, file_hash:str, file_
             self._handle_ownership(sf_owner, 'function', function_name)
 
             # Get file hash from Snowflake & check if exist
-            sf_deploy_hash = self._sf.deploy_hash_get(self._deploy_db_name, function_name, 'function')
-            sf_deploy_code_hash = self._sf.deploy_code_hash_get(self._deploy_db_name, function_name, 'function')
+            #sf_deploy_hash = self._sf.deploy_hash_get(self._deploy_db_name, function_name, 'function')
+            #sf_deploy_code_hash = self._sf.deploy_code_hash_get(self._deploy_db_name, function_name, 'function')
             
-            if sf_deploy_hash != file_hash or sf_deploy_code_hash != file_hash_code:
+
+            #if sf_deploy_hash != file_hash or sf_deploy_code_hash != file_hash_code:
+            if func_details['RETURNS']!=RETURNS or func_details['COMMENT']!= COMMENT or func_details['BODY']!= BODY or func_details['OWNER']!= OWNER or func_details['TAGS']!= TAGS or func_details['GRANTS']!= GRANTS or ('IMPORTS' in func_details and func_details['IMPORTS']!= IMPORTS) or ('HANDLER' in func_details and func_details['HANDLER']!= IMPORTS) or ('RUNTIME_VERSION' in func_details and func_details['RUNTIME_VERSION']!= IMPORTS) or ('PACKAGES' in func_details and func_details['PACKAGES']!= IMPORTS):
                 self._sf.function_create(function_name, function_name, IS_SECURE, INPUT_ARGS, RETURNS, LANGUAGE, COMMENT, BODY, IMPORTS, HANDLER, RUNTIME_VERSION, PACKAGES, OWNER, TAGS, GRANTS, self._deploy_role)
-                self._sf.deploy_hash_apply(sql_function_name, file_hash, 'FUNCTION', self._deploy_db_name)
-                self._sf.deploy_code_hash_apply(sql_function_name, file_hash_code, 'FUNCTION', self._deploy_db_name)
+                #self._sf.deploy_hash_apply(sql_function_name, file_hash, 'FUNCTION', self._deploy_db_name)
+                #self._sf.deploy_code_hash_apply(sql_function_name, file_hash_code, 'FUNCTION', self._deploy_db_name)
         
                 return_status = 'U'
             else:
