@@ -249,7 +249,7 @@ class configurator:
         schema = 'PUBLIC'
         standard_roles = ['ORGADMIN','ACCOUNTADMIN','SYSADMIN','SECURITYADMIN','USERADMIN','PUBLIC']
         excluded_databases = ['SNOWFLAKE_SAMPLE_DATA','SNOWFLAKE','SCHEMACHANGE']
-        deploy_tag_list = ['DEPLOY_HASH','DEPLOY_CODE_HASH']
+        deploy_tag_list = ['DEPLOY_HASH','DEPLOY_CODE_HASH','DEPLOY_LAST_UPDATE']
         #deploy_role = 'INSTANCEADMIN'
 
         # Store and return
