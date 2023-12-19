@@ -41,7 +41,11 @@ def procedure_create(self,procedure_name:str, sql_procedure_name:str, is_secure:
         query += sql_runtime_version + ' ' + sql_packages + ' ' + sql_imports + ' ' + sql_handler + ' '
         #query += sql_null_handling + ' ' + 
         query += sql_comment + ' ' + sql_execute_as + ' as $$ ' + body + ' $$;'
-        
+        #print('%$%$%$%$%$%$%$%$%$%$%$')
+        #print(proc_name_adj)
+        #print('--')
+        #print(body)
+        #print('%$%$%$%$%$%$%$%$%$%$%$')
         cur.execute(query)
         #params = [role_name]
         #if comment is not None:

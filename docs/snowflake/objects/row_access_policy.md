@@ -59,14 +59,14 @@ Basic
 SIGNATURE:
 - VAR1: VARCHAR
 - VAR2: INT
-RETURN_TYPE: VARCHAR
+RETURN_TYPE: BOOLEAN
 EXEMPT_OTHER_POLICIES: false
 OWNER: INSTANCEADMIN
 COMMENT: Row access policy associated for sales records based on department
 TAGS: 
 - {{ref('CONTROL__GOVERNANCE__ENV')}}: {{env}}
 GRANTS: 
-- {{role('SOME_ROLE')}}: USAGE
+- {{role('SOME_ROLE')}}: APPLY
 ```
 
 With a deploy lock & restricted deployment environments.  
@@ -74,14 +74,14 @@ With a deploy lock & restricted deployment environments.
 SIGNATURE:
 - VAR1: VARCHAR
 - VAR2: INT
-RETURN_TYPE: VARCHAR
+RETURN_TYPE: BOOLEAN
 EXEMPT_OTHER_POLICIES: false
 OWNER: INSTANCEADMIN
 COMMENT: Row access policy associated for sales records based on department
 TAGS: 
 - {{ref('CONTROL__GOVERNANCE__ENV')}}: {{env}}
 GRANTS: 
-- {{role('SOME_ROLE')}}: USAGE
+- {{role('SOME_ROLE')}}: APPLY
 DEPLOY_LOCK: true
 DEPLOY_ENV:
 - PROD

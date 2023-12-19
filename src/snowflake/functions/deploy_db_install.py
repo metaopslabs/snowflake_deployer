@@ -23,6 +23,18 @@ def deploy_db_install(self,deploy_db_name: str)->bool:
         '''
         cur.execute(query, (schema_full_name))
 
+        schema_full_name = deploy_db_name + '.DEPLOY';
+        query = '''
+            CREATE SCHEMA IF NOT EXISTS identifier(%s) COMMENT = 'Schema to store deployment state for snowflake-deployer'
+        '''
+        cur.execute(query, (schema_full_name))
+
+        table_full_name = deploy_db_name + '.DEPLOY.OBJECT_STATE';
+        query = '''
+            CREATE TABLE IF NOT EXISTS identifier(%s) (ENV STRING, OBJECT_TYPE STRING, OBJECT_NAME STRING, DEPLOY_HASH STRING, DEPLOY_HASH_CODE STRING, DB_HASH STRING, LAST_DEPLOY_TIMESTAMP TIMESTAMP_LTZ) COMMENT = 'Schema to store deployment state for snowflake-deployer'
+        '''
+        cur.execute(query, (table_full_name))
+
         tag_full_name = deploy_db_name + '.TAG.DEPLOY_HASH';
         query = '''
             CREATE TAG IF NOT EXISTS identifier(%s) COMMENT = 'Tag to store deployment hash for snowflake-deployer'

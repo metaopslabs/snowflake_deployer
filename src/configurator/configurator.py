@@ -197,7 +197,23 @@ class configurator:
             else:
                 new_db = ENV_DATABASE_PREFIX + db
                 IMPORT_DATABASES.append(new_db)
-
+        
+        IMPORT_OBJECT_TYPES_RAW = self._get_param_from_env_or_config_list(config_file, 'IMPORT_OBJECT_TYPES')
+        STANDARD_OBJECT_TYPES = ['ROLE','WAREHOUSE','DATABASE','FUNCTION','MASKING POLICY','OBJECT','PROCEDURE','ROW ACCESS POLICY', 'SCHEMA', 'TAG', 'TASK']
+        IMPORT_OBJECT_TYPES = []
+        for IMPORT_OBJECT_TYPE in IMPORT_OBJECT_TYPES_RAW:
+            # Check if in standard list
+            if IMPORT_OBJECT_TYPE.upper() not in STANDARD_OBJECT_TYPES:
+                raise missing_parameter('Value for config parameter IMPORT_OBJECT_TYPES (' + IMPORT_OBJECT_TYPE.upper() + ') not in standard list - see docs for accepted values for this config')
+            IMPORT_OBJECT_TYPES.append(IMPORT_OBJECT_TYPE.upper())
+        # Object dependency checks  (second loop to make sure to capture all uppercase)
+        for IMPORT_OBJECT_TYPE in IMPORT_OBJECT_TYPES:
+            if IMPORT_OBJECT_TYPE.upper() == 'SCHEMA' and 'DATABASE' not in IMPORT_OBJECT_TYPES:
+                raise missing_parameter('IMPORT_OBJECT_TYPES config parameter includes value SCHEMA, but not DATABASE which is required for this type')
+            if IMPORT_OBJECT_TYPE.upper() in ['FUNCTION','MASKING POLICY','OBJECT','PROCEDURE','ROW ACCESS POLICY','TAG','TASK'] and ('DATABASE' not in IMPORT_OBJECT_TYPES or 'SCHEMA' not in IMPORT_OBJECT_TYPES):
+                raise missing_parameter('IMPORT_OBJECT_TYPES config parameter includes value requiring DATABASE & SCHEMA')
+            
+        
         CLASSIFY_MAX_SAMPLE_SIZE = self._get_param_from_env_or_config(config_file, 'CLASSIFY_MAX_SAMPLE_SIZE', '10000')
 
         CLASSIFY_DATABASES_RAW = self._get_param_from_env_or_config_list(config_file, 'CLASSIFY_DATABASES')
@@ -280,6 +296,7 @@ class configurator:
         config['VARS'] = var_dict
         config['DEPLOY_ENV'] = DEPLOY_ENV
         config['IMPORT_DATABASES'] = IMPORT_DATABASES
+        config['IMPORT_OBJECT_TYPES'] = IMPORT_OBJECT_TYPES
         config['CLASSIFY_DATABASES'] = CLASSIFY_DATABASES
         config['CLASSIFY_TAGS_DB'] = CLASSIFY_TAGS_DB
         config['CLASSIFY_TAGS_SCHEMA'] = CLASSIFY_TAGS_SCHEMA

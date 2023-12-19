@@ -3,9 +3,11 @@ import src.common.common as cmn
 from src.snowflake.snowflake_client import snowflake_client as sf_client
 from src.deployer.deployer import deployer
 from src.deploy_logger.logger import deploy_logger
+from src.wrangler.wrangler import wrangler
 #from yaml_writer.yaml_writer import yaml_writer
 #from yaml_reader.yaml_reader import yaml_reader
 from src.common.common import *
+from src.hasher.hasher import hasher
 import logging
 import shutil
 from time import sleep
@@ -48,6 +50,7 @@ def role(ref_val: str) -> str:
     r['ref_id'] = ref_id # defined in the tempalte loop that rendered (and hence ref) is called from
     r['obj_type'] = obj_type  # defined in the template loop that render (and hence ref) is called from
     r['deps'] = [jinja_ref_id]
+    r['sort_order'] = 1
     _references.append(r)
 
     return processed_name
@@ -76,6 +79,7 @@ def warehouse(ref_val: str) -> str:
     r['ref_id'] = ref_id # defined in the tempalte loop that rendered (and hence ref) is called from
     r['obj_type'] = obj_type  # defined in the template loop that render (and hence ref) is called from
     r['deps'] = [jinja_ref_id]
+    r['sort_order'] = 1
     _references.append(r)
 
     return processed_name
@@ -113,17 +117,19 @@ def ref(ref_val: str)->str:
     r['ref_id'] = ref_id # defined in the tempalte loop that rendered (and hence ref) is called from
     r['obj_type'] = obj_type  # defined in the template loop that render (and hence ref) is called from
     r['deps'] = [jinja_ref_id]
+    r['sort_order'] = sort_order
     _references.append(r)
 
     return processed_name
 
-def task(semaphore, tn:str, ref_id:str, data:dict, completed:list, processing:list, deploy, base_rendered_path:str, deploy_config:dict, logger, available_roles:list, val:validator):
-    thread_start_time = time.time()
+def task(semaphore, tn:str, ref_id:str, data:dict, completed:list, processing:list, deploy, base_rendered_path:str, deploy_config:dict, logger, available_roles:list, val:validator, object_state_dict, db_hash_dict):
+    thread_start_time = time.time() # time is needed in case of an error (but really re-set the time after the semaphore starts the thread)
     #object_name:str
     try:
         # Connect with the semaphore so particular thread knows whether it is allowed to process
         # The semaphore is like a "thread pool" that controls the number of concurrent threads processing at once
         with semaphore:
+            thread_start_time = time.time()
             if ref_id not in processing:
                 object_name = data[ref_id]['obj_name']
                 processing.append(ref_id)
@@ -173,42 +179,45 @@ def task(semaphore, tn:str, ref_id:str, data:dict, completed:list, processing:li
                     #handle_ownership = deploy_config['HANDLE_OWNERSHIP']
                     #deploy_env = deploy_config['DEPLOY_ENV']
 
+                    #print('######## db_hash_dict ##########')
+                    #print(db_hash_dict)
+                    #print('################################')
                     object_type = data[ref_id]['obj_type']
                     # Deploy
                     if object_type == 'database':
                         val.validate_database(config_raw)
-                        return_status = deploy.deploy_database(object_name, file_hash, config_raw)
+                        return_status = deploy.deploy_database(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['database'])
                     elif object_type == 'schema':
                         val.validate_schema(config_raw)
-                        return_status = deploy.deploy_schema(object_name, file_hash, config_raw)
+                        return_status = deploy.deploy_schema(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['schema'])
                     elif object_type == 'tag':
                         val.validate_tag(config_raw)
-                        return_status = deploy.deploy_tag(object_name, file_hash, config_raw)
+                        return_status = deploy.deploy_tag(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['tag'])
                     elif object_type == 'object':
                         val.validate_object(config_raw)
-                        return_status = deploy.deploy_object(object_name, file_hash, config_raw)
+                        return_status = deploy.deploy_object(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['object'])
                     elif object_type == 'warehouse':
                         val.validate_warehouse(config_raw)
-                        return_status = deploy.deploy_warehouse(object_name, file_hash, config_raw)
+                        return_status = deploy.deploy_warehouse(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['warehouse'])
                     elif object_type == 'role':
                         val.validate_role(config_raw)
-                        return_status = deploy.deploy_role(object_name, file_hash, config_raw)
+                        return_status = deploy.deploy_role(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['role'])
                     elif object_type == 'procedure':
                         val.validate_procedure(config_raw)
-                        return_status = deploy.deploy_procedure(object_name, file_hash, file_hash_code, config_raw, body_code)
+                        return_status = deploy.deploy_procedure(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['procedure'])
                     elif object_type == 'function':
                         val.validate_function(config_raw)
-                        return_status = deploy.deploy_function(object_name, file_hash, file_hash_code, config_raw, body_code)
+                        return_status = deploy.deploy_function(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['function'])
                     elif object_type == 'task':
                         val.validate_task(config_raw)
-                        return_status = deploy.deploy_task(object_name, file_hash, file_hash_code, config_raw, body_code)
+                        return_status = deploy.deploy_task(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['task'])
                     elif object_type == 'masking_policy':
                         val.validate_masking_policy(config_raw)
-                        return_status = deploy.deploy_masking_policy(object_name, file_hash, file_hash_code, config_raw, body_code)
+                        return_status = deploy.deploy_masking_policy(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['masking_policy'])
                         #dummy = True
                     elif object_type == 'row_access_policy':
                         val.validate_row_access_policy(config_raw)
-                        return_status = deploy.deploy_row_access_policy(object_name, file_hash, file_hash_code, config_raw, body_code)
+                        return_status = deploy.deploy_row_access_policy(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['row_access_policy'])
                         #dummy = True
                     else:
                         raise object_type_not_supported(object_type)
@@ -219,7 +228,7 @@ def task(semaphore, tn:str, ref_id:str, data:dict, completed:list, processing:li
                     #threads = []
                     for next_ref_id in data[ref_id]['next']: 
                         tn2 = 'thread_' + next_ref_id
-                        t2 = threading.Thread(target=task, name=tn2, args=(semaphore, tn2, next_ref_id, data, completed, processing, deploy, base_rendered_path, deploy_config, logger, available_roles, val))
+                        t2 = threading.Thread(target=task, name=tn2, args=(semaphore, tn2, next_ref_id, data, completed, processing, deploy, base_rendered_path, deploy_config, logger, available_roles, val, object_state_dict, db_hash_dict))
                         #                                                   semaphore, tn, object_name, data, completed
                         t2.start()
                         
@@ -272,6 +281,7 @@ def snowflake_deploy(args:dict):
     global obj_name
     global ref_id
     global obj_type
+    global sort_order
     global _references
 
     #print('this is the deploy file')
@@ -299,14 +309,18 @@ def snowflake_deploy(args:dict):
     deploy_role = config['DEPLOY_ROLE']
     handle_ownership = config['HANDLE_OWNERSHIP']
     deploy_env = config['DEPLOY_ENV']
+    excluded_databases = config['EXCLUDED_DATABASES']
+    import_databases = config['IMPORT_DATABASES']
 
     try:
         ###############################################################################################################
         #                                                   Connect to Snowflake
         ###############################################################################################################
+        logger.log('','Connecting to Snowflake ...')
         sf = sf_client(config['SNOWFLAKE_PRIVATE_KEY'], config['SNOWFLAKE_PRIVATE_KEY_PASSWORD'], config['SNOWFLAKE_ACCOUNT'], config['SNOWFLAKE_USERNAME'], config['SNOWFLAKE_WAREHOUSE'], config['database'], config['schema'] )
         #print('Connected to Snowflake')
-        logging.info('Connected to Snowflake')
+        logger.log('','Connected to Snowflake!')
+        logger.log('','Getting things set up')
 
         # Get current role
         available_roles = []
@@ -318,9 +332,14 @@ def snowflake_deploy(args:dict):
         #####################################################
         # Install Deploy DB if not exists
         
-        
-        deploy = deployer(sf, deploy_db_name, deploy_role, handle_ownership, available_roles, deploy_env)
+        hsh = hasher()
+        wrangle = wrangler(sf)
+        deploy = deployer(sf, deploy_db_name, deploy_role, handle_ownership, available_roles, deploy_env, hsh)
         deploy.check_and_install_deployer_db()
+
+        # Get Get hash values
+        logger.log('','Getting current state Snowflake log')
+        object_state_dict = sf.deploy_db_object_state_get(deploy_db_name, deploy_env)
 
         # Set up jinja environment and load all data files
         _references = []
@@ -331,6 +350,8 @@ def snowflake_deploy(args:dict):
         env.globals['role'] = role
 
         base_rendered_path = 'metaops-deploy-rendered/'
+
+        logger.log('','Loading config files')
 
         # Delete existing rendered
         dirpath = Path(base_rendered_path)
@@ -354,6 +375,7 @@ def snowflake_deploy(args:dict):
                     ref_id = obj_type + '__' + raw_name
                     file_ext = folders[2].split('.')[1]
                     deps = []
+                    sort_order = 1
                 elif folders[1].upper() == 'ROLES':
                     obj_type = 'role'
                     raw_name = folders[2].split('.')[0]
@@ -361,6 +383,7 @@ def snowflake_deploy(args:dict):
                     ref_id = obj_type + '__' + raw_name
                     file_ext = folders[2].split('.')[1]
                     deps = []
+                    sort_order = 1
                 else:
                     raise Exception('Invalid folder structure - folder not valid:' + folders[0] + '/' + folders[1])                
             elif folders[0].upper() == 'DATA':  # data
@@ -374,6 +397,7 @@ def snowflake_deploy(args:dict):
                     ref_id = db_raw
                     file_ext = folders[2].split('.')[1]
                     deps = []
+                    sort_order = 2
                 elif( len(folders) == 4):
                     if( folders[3].split('.')[0].upper() != 'SCHEMA' ):
                         raise Exception('schema ' + folders[1] + '.' + folders[2] + ' does not contain schema.yml config')
@@ -383,6 +407,7 @@ def snowflake_deploy(args:dict):
                     ref_id = db_raw + '.' + raw_schema
                     file_ext = folders[3].split('.')[1]
                     deps = [db_raw]
+                    sort_order = 3
                 elif( len(folders) == 5):
                     #if( folders[2].upper() not in ('TAGS') ):
                     if folders[3].upper() == 'TAGS':
@@ -393,6 +418,7 @@ def snowflake_deploy(args:dict):
                         schema_id = db_raw + '.' + folders[2]
                         file_ext = folders[4].split('.')[1]
                         deps = [schema_id]
+                        sort_order = 4
                     elif folders[3].upper() == 'OBJECTS':
                         obj_type = 'object'
                         raw_name = folders[4].split('.')[0].split('__')[2]
@@ -401,6 +427,7 @@ def snowflake_deploy(args:dict):
                         schema_id = db_raw + '.' + folders[2]
                         file_ext = folders[4].split('.')[1]
                         deps = [schema_id]
+                        sort_order = 4
                     elif folders[3].upper() == 'PROCEDURES':
                         obj_type = 'procedure'
                         raw_name = folders[4].split('.')[0].split('__')[2] + '__' + folders[4].split('.')[0].split('__')[3]
@@ -409,6 +436,7 @@ def snowflake_deploy(args:dict):
                         schema_id = db_raw + '.' + folders[2]
                         file_ext = folders[4].split('.')[1]
                         deps = [schema_id]
+                        sort_order = 4
                     elif folders[3].upper() == 'FUNCTIONS':
                         obj_type = 'function'
                         raw_name = folders[4].split('.')[0].split('__')[2] + '__' + folders[4].split('.')[0].split('__')[3]
@@ -417,6 +445,7 @@ def snowflake_deploy(args:dict):
                         schema_id = db_raw + '.' + folders[2]
                         file_ext = folders[4].split('.')[1]
                         deps = [schema_id]
+                        sort_order = 4
                     elif folders[3].upper() == 'TASKS':
                         obj_type = 'task'
                         raw_name = folders[4].split('.')[0].split('__')[2]
@@ -425,6 +454,7 @@ def snowflake_deploy(args:dict):
                         schema_id = db_raw + '.' + folders[2]
                         file_ext = folders[4].split('.')[1]
                         deps = [schema_id]
+                        sort_order = 4
                     elif folders[3].upper() == 'MASKING_POLICIES':
                         obj_type = 'masking_policy'
                         raw_name = folders[4].split('.')[0].split('__')[2]
@@ -433,6 +463,7 @@ def snowflake_deploy(args:dict):
                         schema_id = db_raw + '.' + folders[2]
                         file_ext = folders[4].split('.')[1]
                         deps = [schema_id]
+                        sort_order = 4
                     elif folders[3].upper() == 'ROW_ACCESS_POLICIES':
                         obj_type = 'row_access_policy'
                         raw_name = folders[4].split('.')[0].split('__')[2]
@@ -441,6 +472,7 @@ def snowflake_deploy(args:dict):
                         schema_id = db_raw + '.' + folders[2]
                         file_ext = folders[4].split('.')[1]
                         deps = [schema_id]
+                        sort_order = 4
                     else:
                         raise object_type_not_supported(folders[3])
                         #raise Exception('object type ' + folders[2] + ' not currently support')
@@ -464,6 +496,7 @@ def snowflake_deploy(args:dict):
             r['ref_id'] = ref_id
             r['obj_type'] = obj_type
             r['deps'] = deps 
+            r['sort_order'] = sort_order
             #print(config['VARS'])
             
             _references.append(r)
@@ -487,6 +520,7 @@ def snowflake_deploy(args:dict):
             ref_id = r['ref_id']
             obj_type = r['obj_type']
             deps = r['deps']
+            sort_order = r['sort_order']
 
             # Add object to path
             if ref_id not in map.keys():
@@ -497,10 +531,12 @@ def snowflake_deploy(args:dict):
                 map[ref_id]['obj_name'] = obj_name
                 map[ref_id]['deps'] = []
                 map[ref_id]['next'] = []
+                map[ref_id]['sort_order'] = sort_order
             else:  
                 map[ref_id]['path'] = path # if added by Nexts, need to update path of object
                 map[ref_id]['obj_type'] = obj_type
                 map[ref_id]['obj_name'] = obj_name
+                map[ref_id]['sort_order'] = sort_order
                 if (code_path is not None and code_path != '' and 'code_path' in map[ref_id]) and (map[ref_id]['code_path'] is None or map[ref_id]['code_path'] == ''):
                     map[ref_id]['code_path'] = code_path
                 elif code_path is not None and code_path != '' and 'code_path' not in map[ref_id]:
@@ -539,30 +575,12 @@ def snowflake_deploy(args:dict):
             is_circle = check_for_circular_ref(map, key, key)
             if is_circle and key not in circular_keys:
                 circular_keys.append(key)
-                
+        #print('******** CIRCULAR KEYS ********')
+        #print(circular_keys)    
+        #print('*******************************')
         if circular_keys != []:
             circular_keys_string = '[' + ', '.join(circular_keys) + ']'
             raise Exception('Circular keys found in the following objects: ' + circular_keys_string)
-
-        # # flatten next
-        # flatten = []
-        # for key in map.keys():
-        #     deps = map[key]['deps']
-        #     for n in map[key]['next']:
-        #         flatten.append({"ref_id": key, "deps": deps, "next": n})
-        
-        # circular_keys = []
-        # for f in flatten:
-        #     key = f['ref_id']
-        #     continue = True
-        #     while continue:
-        #         next = map[key]['next']
-        #         if next == []:
-        #             continue = False
-        #         for 
-
-
-
 
         #####################################################
         # Get starting objects (ones with no dependencies)
@@ -578,6 +596,176 @@ def snowflake_deploy(args:dict):
         # Semaphore sets the number of concurrent threads running at any one time
         semaphore = threading.Semaphore(config['MAX_THREADS'])
 
+        #####################################################
+        # Get Object Types to get current types
+        
+        map_object_types = []
+        for key in map.keys():
+            obj_type = map[key]['obj_type']
+            if obj_type not in map_object_types:
+                map_object_types.append(obj_type)
+
+
+        #map_object_types_unsorted = []
+        #object_types_unique = []
+        #for key in map.keys():
+        #    k = {}
+        #    obj_type = map[key]['obj_type']
+        #    sort_order = map[key]['sort_order']
+        #    if obj_type not in object_types_unique:
+        #        k['object_type'] = obj_type
+        #        k['sort_order'] = sort_order
+        #        map_object_types_unsorted.append(k)
+        #        object_types_unique.append(obj_type)
+
+        #map_object_types = sorted(map_object_types_unsorted, key=lambda d: d['sort_order']) 
+   
+        ignore_roles_list = config['STANDARD_ROLES']
+        ignore_roles_list.append(current_role) # ignore out of the box roles PLUS the role that owns deployments (which can be hard coded in the files)
+        
+        #print('------------------')
+        #print(map_object_types)
+        #print('------------------')
+
+        db_hash_dict = {}
+        dbs = []
+        schemas = []
+        tags = []
+        objects = []
+        procedures = []
+        functions = []
+        tasks = []
+        masking_policies = []
+        row_access_policies = []
+        if 'warehouse' in map_object_types:
+            logger.log('','Getting current Snowflake WAREHOUSES to calculate diffs from config')
+            whs = wrangle.wrangle_warehouse(config['ENV_WAREHOUSE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+            db_hash_dict['warehouse'] = hsh.hash_warehouse_all(whs)
+        
+        if 'role' in map_object_types:  
+            logger.log('','Getting current Snowflake ROLES to calculate diffs from config')
+            rs = wrangle.wrangle_role(config['ENV_ROLE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+            db_hash_dict['role'] = hsh.hash_role_all(rs)
+
+        if 'database' in map_object_types:  
+            logger.log('','Getting current Snowflake DATABASES to calculate diffs from config')
+            dbs = wrangle.wrangle_database(config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], excluded_databases, config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'], import_databases,semaphore)
+            db_hash_dict['database'] = hsh.hash_database_all(dbs)
+        
+        if 'schema' in map_object_types:  
+            logger.log('','Getting current Snowflake SCHEMAS to calculate diffs from config')
+            for db in dbs:
+                schemas_new = wrangle.wrangle_schema(db['DATABASE_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+                schemas = schemas + schemas_new
+            db_hash_dict['schema'] = hsh.hash_schema_all(schemas)
+
+        if 'tag' in map_object_types:  
+            logger.log('','Getting current Snowflake TAGS to calculate diffs from config')
+            for schema in schemas:
+                tags_new = wrangle.wrangle_tag(schema['DATABASE_NAME'], schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+                tags = tags + tags_new
+            db_hash_dict['tag'] = hsh.hash_tag_all(tags)
+
+        if 'object' in map_object_types:  
+            logger.log('','Getting current Snowflake OBJECTS to calculate diffs from config')
+            for schema in schemas:
+                objects_new = wrangle.wrangle_object(schema['DATABASE_NAME'], schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+                objects = objects + objects_new
+            db_hash_dict['object'] = hsh.hash_object_all(objects)
+            #print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+            #print(db_hash_dict['object'])
+            #print('~~~~~')
+            #print(objects)
+            #print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+        if 'procedure' in map_object_types:  
+            logger.log('','Getting current Snowflake PROCEDURES to calculate diffs from config')
+            for db in dbs:
+                procedure_new = wrangle.wrangle_procedure(db['DATABASE_NAME'], config['ENV_PROCEDURE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+                procedures = procedures + procedure_new
+            db_hash_dict['procedure'] = hsh.hash_procedure_all(procedures)
+
+        if 'function' in map_object_types:  
+            logger.log('','Getting current Snowflake FUNCTIONS to calculate diffs from config')
+            for db in dbs:
+                function_new = wrangle.wrangle_function(db['DATABASE_NAME'], config['ENV_FUNCTION_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+                functions = functions + function_new
+            db_hash_dict['function'] = hsh.hash_function_all(functions)
+
+        if 'task' in map_object_types:  
+            logger.log('','Getting current Snowflake TASKS to calculate diffs from config')
+            for schema in schemas:
+                task_new = wrangle.wrangle_task(schema['DATABASE_NAME'], schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+                tasks = tasks + task_new
+            db_hash_dict['task'] = hsh.hash_task_all(tasks)
+
+        if 'masking_policy' in map_object_types:  
+            logger.log('','Getting current Snowflake MASKING POLICIES to calculate diffs from config')
+            for schema in schemas:
+                masking_policy_new = wrangle.wrangle_masking_policy(schema['DATABASE_NAME'], schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+                masking_policies = masking_policies + masking_policy_new
+            db_hash_dict['masking_policy'] = hsh.hash_masking_policy_all(masking_policies)
+
+        if 'row_access_policy' in map_object_types:  
+            logger.log('','Getting current Snowflake ROW ACCESS POLICIES to calculate diffs from config')
+            for schema in schemas:
+                row_access_policy_new = wrangle.wrangle_row_access_policy(schema['DATABASE_NAME'], schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+                row_access_policies = row_access_policies + row_access_policy_new
+            db_hash_dict['row_access_policy'] = hsh.hash_row_access_policy_all(row_access_policies)
+        
+
+        #for obj in map_object_types:
+        #    object_type = obj['object_type']
+            #if object_type == 'database':
+            #    logger.log('','Getting current Snowflake DATABASES to calculate diffs from config')
+            #    dbs = wrangle.wrangle_database(config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], excluded_databases, config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'], import_databases,semaphore)
+            #    db_hash_dict['database'] = hsh.hash_database_all(dbs)
+            
+            #elif object_type == 'schema':
+            #    logger.log('','Getting current Snowflake SCHEMAS to calculate diffs from config')
+            #    #print('------------------')
+            #    #print(dbs)
+            #    #print('------------------')
+            #    for db in dbs:
+            #        schemas_new = wrangle.wrangle_schema(db['DATABASE_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+            #        schemas = schemas + schemas_new
+            #    db_hash_dict['schema'] = hsh.hash_schema_all(schemas)
+            #    #print('+++++++++++++++++++')
+            #    #print(db_hash_dict['schema'])
+            #    #print('+++++++++++++++++++')
+            #elif object_type == 'tag':
+            #    logger.log('','Getting current Snowflake TAGS to calculate diffs from config')
+            #    for schema in schemas:
+            #        tags_new = wrangle.wrangle_tag(schema['DATABASE_NAME'], schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+            #        tags = tags + tags_new
+            #    db_hash_dict['tag'] = hsh.hash_tag_all(tags)
+            #
+            #elif object_type == 'object':
+                
+            #elif object_type == 'warehouse':
+            #    logger.log('','Getting current Snowflake WAREHOUSES to calculate diffs from config')
+            #    whs = wrangle.wrangle_warehouse(config['ENV_WAREHOUSE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+            #    db_hash_dict['warehouse'] = hsh.hash_warehouse_all(whs)
+                
+            #elif object_type == 'role':
+            #    logger.log('','Getting current Snowflake ROLES to calculate diffs from config')
+            #    rs = wrangle.wrangle_role(config['ENV_ROLE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+            #    db_hash_dict['role'] = hsh.hash_role_all(rs)
+                
+            #elif object_type == 'procedure':
+                
+            #elif object_type == 'function':
+                
+            #elif object_type == 'task':
+                
+            #elif object_type == 'masking_policy':
+                
+            #elif object_type == 'row_access_policy':
+                
+            #else:
+            #    raise object_type_not_supported(object_type)
+
+        
+
         completed = []  # need to track the objects already processed to know when downstream (next) processes can begin based on all dependencies being "complete"
         processing = []  # need to track currently executing processes for race conditions when a process kicks off (from a next of another object) that is already processing to avoid duplicate execution
         # Create a bunch of threads and add to array
@@ -586,7 +774,7 @@ def snowflake_deploy(args:dict):
         #for i in range(10):
         for ref_id in map_start:
             tn = 'thread_' + ref_id
-            t = threading.Thread(target=task, name=tn, args=(semaphore, tn, ref_id, map, completed, processing, deploy, base_rendered_path, config, logger, available_roles, val))
+            t = threading.Thread(target=task, name=tn, args=(semaphore, tn, ref_id, map, completed, processing, deploy, base_rendered_path, config, logger, available_roles, val, object_state_dict, db_hash_dict))
             threads.append(t)
 
         # Kick off all threads to begin execution

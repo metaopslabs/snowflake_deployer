@@ -12,7 +12,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='snowflake-deployer',
-    version='0.1.15',
+    version='0.1.16',
     description='Snowflake state based deployer',
     long_description='Deploy objects to Snowflake instance in a stateful manner.  See Project Docs for details.',
     long_description_content_type="text/markdown",

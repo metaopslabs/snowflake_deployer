@@ -1,4 +1,4 @@
-def deploy_warehouse(self, warehouse_name:str, file_hash:str, config:dict)->str:
+def deploy_warehouse(self, warehouse_name:str, file_hash:str, config:dict, object_state_dict:dict, db_hash_dict:dict)->str:
     # warehouse_name in format <WAREHOUSE_NAME>
     
     # Get vars from config
@@ -42,23 +42,48 @@ def deploy_warehouse(self, warehouse_name:str, file_hash:str, config:dict)->str:
         return_status = 'E'
     else: 
         # Check if db exists 
-        wh_exists, sf_owner = self._sf.warehouse_check_exists(warehouse_name)
+        #wh_exists, sf_owner = self._sf.warehouse_check_exists(warehouse_name)
+        if warehouse_name in db_hash_dict:
+            wh_exists = True
+            sf_owner = db_hash_dict[warehouse_name]['owner']
+            db_hash = db_hash_dict[warehouse_name]['db_hash']
+        else:
+            wh_exists = False
+            sf_owner = ''
+            db_hash = ''
+        
+        if warehouse_name in object_state_dict and object_state_dict[warehouse_name]['OBJECT_TYPE'].upper() == 'WAREHOUSE':
+            state_file_hash = object_state_dict[warehouse_name]['DEPLOY_HASH']
+            state_db_hash = object_state_dict[warehouse_name]['DB_HASH']
+        else:
+            state_file_hash = ''
+            state_db_hash = ''
 
+        #print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+        #print(state_file_hash)
+        #print(file_hash)
+        #print(state_db_hash)
+        #print(db_hash)
+        #print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
         if not wh_exists:
             # Create database
             self._sf.warehouse_create(warehouse_name, WAREHOUSE_TYPE, WAREHOUSE_SIZE, MIN_CLUSTER_COUNT, MAX_CLUSTER_COUNT, SCALING_POLICY, AUTO_SUSPEND, AUTO_RESUME, OWNER, COMMENT, ENABLE_QUERY_ACCELERATION, QUERY_ACCELERATION_MAX_SCALE_FACTOR, TAGS, GRANTS, self._deploy_role)
+            db_hash_new = self._hasher.hash_warehouse(WAREHOUSE_TYPE, WAREHOUSE_SIZE, MIN_CLUSTER_COUNT, MAX_CLUSTER_COUNT, SCALING_POLICY, AUTO_SUSPEND, AUTO_RESUME, OWNER, COMMENT, ENABLE_QUERY_ACCELERATION, QUERY_ACCELERATION_MAX_SCALE_FACTOR, TAGS, GRANTS)
+            #print('%^^^^^^^^^^^^^^^^^^^^^^^')
+            #print(db_hash_new)
+            self._sf.deploy_hash_apply(warehouse_name, 'WAREHOUSE', file_hash, '', db_hash_new, self._deploy_env, self._deploy_db_name)
 
-            self._sf.deploy_hash_apply(warehouse_name, file_hash, 'WAREHOUSE', self._deploy_db_name)
             return_status = 'C'
         else:
             self._handle_ownership(sf_owner, 'warehouse', warehouse_name)
 
             # Get file hash from Snowflake & check if exist
-            sf_deploy_hash = self._sf.deploy_hash_get(self._deploy_db_name, warehouse_name, 'warehouse')
+            #sf_deploy_hash = self._sf.deploy_hash_get(self._deploy_db_name, warehouse_name, 'warehouse')
             
-            if sf_deploy_hash != file_hash:
+            if state_file_hash != file_hash or state_db_hash != db_hash:
                 self._sf.warehouse_alter(warehouse_name, WAREHOUSE_TYPE, WAREHOUSE_SIZE, MIN_CLUSTER_COUNT, MAX_CLUSTER_COUNT, SCALING_POLICY, AUTO_SUSPEND, AUTO_RESUME, OWNER, COMMENT, ENABLE_QUERY_ACCELERATION, QUERY_ACCELERATION_MAX_SCALE_FACTOR, TAGS, GRANTS)
-                self._sf.deploy_hash_apply(warehouse_name, file_hash, 'WAREHOUSE', self._deploy_db_name)
+                db_hash_new = self._hasher.hash_warehouse(WAREHOUSE_TYPE, WAREHOUSE_SIZE, MIN_CLUSTER_COUNT, MAX_CLUSTER_COUNT, SCALING_POLICY, AUTO_SUSPEND, AUTO_RESUME, OWNER, COMMENT, ENABLE_QUERY_ACCELERATION, QUERY_ACCELERATION_MAX_SCALE_FACTOR, TAGS, GRANTS)
+                self._sf.deploy_hash_apply(warehouse_name, 'WAREHOUSE', file_hash, '', db_hash_new, self._deploy_env, self._deploy_db_name)
                 return_status = 'U'
             else:
                 # else - ignore - everything up to date if hashes match

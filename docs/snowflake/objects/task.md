@@ -80,7 +80,7 @@ SUSPEND_TASK_AFTER_NUM_FAILURES: 5
 TAGS: 
 - {{ref('CONTROL__GOVERNANCE__ENV')}}: {{env}}
 GRANTS: 
-- {{role('SOME_ROLE')}}: USAGE
+- {{role('SOME_ROLE')}}:  MONITOR, OPERATE
 ```
 
 Code file with .sql extension

@@ -54,7 +54,9 @@ Policy
 
 ## Samples
 
-Basic
+### Basic
+
+Config
 ```
 SIGNATURE:
 - VAR1: VARCHAR
@@ -66,10 +68,20 @@ COMMENT: Masking policy associated with the sensitivity tag
 TAGS: 
 - {{ref('CONTROL__GOVERNANCE__ENV')}}: {{env}}
 GRANTS: 
-- {{role('SOME_ROLE')}}: USAGE
+- {{role('SOME_ROLE')}}: APPLY
+```
+
+Code file (.py in this example)
+```
+CASE     
+    WHEN current_role() IN ('DATA_ENGINEER') THEN VAL     
+    ELSE '***'   
+END
 ```
 
 With a deploy lock & restricted deployment environments.  
+
+### Config
 ```
 SIGNATURE:
 - VAR1: VARCHAR
@@ -81,9 +93,17 @@ COMMENT: Masking policy associated with the sensitivity tag
 TAGS: 
 - {{ref('CONTROL__GOVERNANCE__ENV')}}: {{env}}
 GRANTS: 
-- {{role('SOME_ROLE')}}: USAGE
+- {{role('SOME_ROLE')}}: APPLY
 DEPLOY_LOCK: true
 DEPLOY_ENV:
 - PROD
 - TEST
+```
+
+Code file (.py in this example)
+```
+CASE     
+    WHEN current_role() IN ('DATA_ENGINEER') THEN VAL     
+    ELSE '***'   
+END
 ```
