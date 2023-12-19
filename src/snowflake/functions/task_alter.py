@@ -5,6 +5,11 @@ def task_alter(self,task_full_name:str, WAREHOUSE:str, SCHEDULE:str, ALLOW_OVERL
     cur = self._conn.cursor(DictCursor)
     query = ''
     try:
+        
+        # Task must be suspended in order to alter
+        query = "ALTER TASK " + task_full_name + " SUSPEND;"
+        cur.execute(query)
+
         set_cnt = 0
         unset_cnt = 0
         
@@ -116,14 +121,7 @@ def task_alter(self,task_full_name:str, WAREHOUSE:str, SCHEDULE:str, ALLOW_OVERL
             cur.execute(query)
 
             
-        # Resume/Suspend
-        if ENABLED:
-            query = "ALTER TASK " + task_full_name + " RESUME;"
-            cur.execute(query)
-        else:
-            query = "ALTER TASK " + task_full_name + " SUSPEND;"
-            cur.execute(query)
-
+        
         # Body
         query = "ALTER TASK " + task_full_name + " MODIFY AS " + BODY
         cur.execute(query)
@@ -133,6 +131,7 @@ def task_alter(self,task_full_name:str, WAREHOUSE:str, SCHEDULE:str, ALLOW_OVERL
             query = "ALTER TASK " + task_full_name + " MODIFY WHEN " + CONDITION
             cur.execute(query)
 
+        
         #  PREDECESSORS alter
 
         # get current PREDECESSORS
@@ -159,6 +158,14 @@ def task_alter(self,task_full_name:str, WAREHOUSE:str, SCHEDULE:str, ALLOW_OVERL
             query = "ALTER TASK " + task_full_name + " ADD AFTER " + ", ".join(predecessors_to_add)
             cur.execute(query)
         
+        # Resume/Suspend
+        if ENABLED:
+            query = "ALTER TASK " + task_full_name + " RESUME;"
+            cur.execute(query)
+        else:
+            query = "ALTER TASK " + task_full_name + " SUSPEND;"
+            cur.execute(query)
+
         # Tags
         if TAGS is not None and TAGS != []:
             for t in TAGS:

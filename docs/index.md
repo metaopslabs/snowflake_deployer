@@ -25,9 +25,9 @@ The snowflake-deployer uses the best of worlds.  A yml state based config files 
 
 The snowflake-deployer converts the yml config into CREATE or ALTER statements based on current objects within the database.
 
-## State hash tightly coupled to objects
+## File Hash & Object Hash
 
-Each object's state is stored directly on the object itself.  This allows on deployment to determine which objects have changed and need to be updated and which objects have not changed and can be ignored.
+File hashes and object hashes are both store and calculated at run time.  So if either a file changed or an object changed from another application (ie. FiveTran loading a table and adding a column or a transformation removing tags), the deployer will detect that the object needs to be updated.  This also allows the deployment to ignore objects that match the config file to prevent every object to be deployed on every run.
 
 ## Deploy & Import
 

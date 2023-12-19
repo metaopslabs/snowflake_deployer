@@ -16,3 +16,7 @@
 
 # 0.1.12-0.1.14
 - Bugfixes
+
+# 0.1.16
+- Multi threading of tags & grants for performance improvements
+- Added config value IMPORT_OBJECT_TYPES to limit object types

@@ -2,7 +2,7 @@ def schema_create(self,schema_name:str, data_retention_time_in_days:int, comment
     cur = self._conn.cursor()
     query = ''
     try:
-        query = 'CREATE SCHEMA identifier(%s)'
+        query = 'CREATE SCHEMA IF NOT EXISTS identifier(%s)'
         params = [schema_name]
         if data_retention_time_in_days is not None:
             query += ' DATA_RETENTION_TIME_IN_DAYS = %s'

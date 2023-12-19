@@ -69,6 +69,7 @@ class snowflake_client:
     from .functions.deploy_code_hash_get import deploy_code_hash_get
     from .functions.deploy_db_check_installed import deploy_db_check_installed
     from .functions.deploy_db_install import deploy_db_install
+    from .functions.deploy_db_object_state_get import deploy_db_object_state_get
     from .functions.deploy_hash_get import deploy_hash_get
     from .functions.deploy_hash_apply import deploy_hash_apply
     from .functions.deploy_hash_and_last_update_get import deploy_hash_and_last_update_get

@@ -4,13 +4,14 @@ from src.common.enums import HANDLE_OWNERSHIP_OPTION
 # Abstract to handle the deployment from source code to Snowflake for each object type
 
 class deployer:
-    def __init__(self,sf, deploy_db_name:str, deploy_role:str, handle_ownership, available_roles:list, deploy_env:str):
+    def __init__(self,sf, deploy_db_name:str, deploy_role:str, handle_ownership, available_roles:list, deploy_env:str, hasher):
         self._sf = sf
         self._deploy_db_name = deploy_db_name
         self._deploy_role = deploy_role
         self._ownership_handling = handle_ownership
         self._available_roles = available_roles
         self._deploy_env = deploy_env
+        self._hasher = hasher
     
     def check_and_install_deployer_db(self):
         is_installed = self._sf.deploy_db_check_installed(self._deploy_db_name)

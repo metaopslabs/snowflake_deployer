@@ -1,4 +1,4 @@
-def deploy_task(self, task_full_name:str, file_hash:str, file_hash_code:str, config:dict, body_code:str)->str:
+def deploy_task(self, task_full_name:str, file_hash:str, file_hash_code:str, config:dict, body_code:str, object_state_dict:dict, db_hash_dict:dict)->str:
     # task_full_name = <db>.<schema>.<name>
    
     # Get vars from config
@@ -12,8 +12,8 @@ def deploy_task(self, task_full_name:str, file_hash:str, file_hash_code:str, con
     ENABLED = config['ENABLED'] if 'ENABLED' in config else None
     CONDITION = config['CONDITION'] if 'CONDITION' in config else None
     USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE = config['USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE'] if 'USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE' in config else None
-    USER_TASK_TIMEOUT_MS = config['USER_TASK_TIMEOUT_MS'] if 'USER_TASK_TIMEOUT_MS' in config else None
-    SUSPEND_TASK_AFTER_NUM_FAILURES = config['SUSPEND_TASK_AFTER_NUM_FAILURES'] if 'SUSPEND_TASK_AFTER_NUM_FAILURES' in config else None
+    USER_TASK_TIMEOUT_MS = str(config['USER_TASK_TIMEOUT_MS']) if 'USER_TASK_TIMEOUT_MS' in config else None
+    SUSPEND_TASK_AFTER_NUM_FAILURES = str(config['SUSPEND_TASK_AFTER_NUM_FAILURES']) if 'SUSPEND_TASK_AFTER_NUM_FAILURES' in config else None
     
     TAGS = config['TAGS'] if 'TAGS' in config and config['TAGS'] != '' and config['TAGS'] is not None else []
     BODY = body_code
@@ -30,28 +30,53 @@ def deploy_task(self, task_full_name:str, file_hash:str, file_hash_code:str, con
     else:
         # Check if db exists 
 
-        task_exists, sf_owner = self._sf.task_check_exists(task_full_name)
+        #task_exists, sf_owner = self._sf.task_check_exists(task_full_name)
+        if task_full_name in db_hash_dict:
+            task_exists = True
+            sf_owner = db_hash_dict[task_full_name]['owner']
+            db_hash = db_hash_dict[task_full_name]['db_hash']
+        else:
+            task_exists = False
+            sf_owner = ''
+            db_hash = ''
+            
+        if task_full_name in object_state_dict and object_state_dict[task_full_name]['OBJECT_TYPE'].upper() == 'TASK':
+            state_file_hash = object_state_dict[task_full_name]['DEPLOY_HASH']
+            state_db_hash = object_state_dict[task_full_name]['DB_HASH']
+            state_file_hash_code = object_state_dict[task_full_name]['DEPLOY_HASH_CODE']
+        else:
+            state_file_hash = ''
+            state_db_hash = ''
+            state_file_hash_code = ''
 
+        #print('************************************')
+        #print(state_file_hash)
+        #print(file_hash)
+        #print(state_file_hash_code)
+        #print(file_hash_code)
+        #print(state_db_hash)
+        #print(db_hash)
+        #print('************************************')
         if not task_exists:
             # Create database
             self._sf.task_create(task_full_name, WAREHOUSE, SCHEDULE, ALLOW_OVERLAPPING_EXECUTION, ERROR_INTEGRATION, PREDECESSORS, COMMENT, ENABLED, CONDITION, USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE, USER_TASK_TIMEOUT_MS, SUSPEND_TASK_AFTER_NUM_FAILURES, BODY, OWNER, TAGS, GRANTS, self._deploy_role)
 
-            self._sf.deploy_hash_apply(task_full_name, file_hash, 'TASK', self._deploy_db_name)
-            self._sf.deploy_code_hash_apply(task_full_name, file_hash_code, 'TASK', self._deploy_db_name)
-        
+            db_hash_new = self._hasher.hash_task(WAREHOUSE, SCHEDULE, ALLOW_OVERLAPPING_EXECUTION, ERROR_INTEGRATION, PREDECESSORS, OWNER, ENABLED, CONDITION, USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE, USER_TASK_TIMEOUT_MS, SUSPEND_TASK_AFTER_NUM_FAILURES, TAGS, BODY, GRANTS)
+            self._sf.deploy_hash_apply(task_full_name, 'TASK', file_hash, file_hash_code, db_hash_new, self._deploy_env, self._deploy_db_name)
+                
             return_status = 'C'
         else:
             self._handle_ownership(sf_owner, 'task', task_full_name)
 
             # Get file hash from Snowflake & check if exist
-            sf_deploy_hash = self._sf.deploy_hash_get(self._deploy_db_name, task_full_name, 'task')
-            sf_deploy_code_hash = self._sf.deploy_code_hash_get(self._deploy_db_name, task_full_name, 'task')
+            #sf_deploy_hash = self._sf.deploy_hash_get(self._deploy_db_name, task_full_name, 'task')
+            #sf_deploy_code_hash = self._sf.deploy_code_hash_get(self._deploy_db_name, task_full_name, 'task')
             
-            if sf_deploy_hash != file_hash or sf_deploy_code_hash != file_hash_code:
+            if state_file_hash != file_hash or state_file_hash_code != file_hash_code or state_db_hash != db_hash:
                 self._sf.task_alter(task_full_name, WAREHOUSE, SCHEDULE, ALLOW_OVERLAPPING_EXECUTION, ERROR_INTEGRATION, PREDECESSORS, COMMENT, ENABLED, CONDITION, USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE, USER_TASK_TIMEOUT_MS, SUSPEND_TASK_AFTER_NUM_FAILURES, BODY, OWNER, TAGS, GRANTS, self._deploy_role)
-                self._sf.deploy_hash_apply(task_full_name, file_hash, 'TASK', self._deploy_db_name)
-                self._sf.deploy_code_hash_apply(task_full_name, file_hash_code, 'TASK', self._deploy_db_name)
-        
+                db_hash_new = self._hasher.hash_task(WAREHOUSE, SCHEDULE, ALLOW_OVERLAPPING_EXECUTION, ERROR_INTEGRATION, PREDECESSORS, OWNER, ENABLED, CONDITION, USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE, USER_TASK_TIMEOUT_MS, SUSPEND_TASK_AFTER_NUM_FAILURES, TAGS, BODY, GRANTS)
+                self._sf.deploy_hash_apply(task_full_name, 'TASK', file_hash, file_hash_code, db_hash_new, self._deploy_env, self._deploy_db_name)
+                
                 return_status = 'U'
             else:
                 return_status = 'I'

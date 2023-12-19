@@ -1,5 +1,5 @@
 from src.util.util import remove_prefix
-def wrangle_network_policy(self, database_name:str, schema_name:str, env_database_prefix:str, env_role_prefix:str, deploy_db_name:str, ignore_roles_list:str, deploy_tag_list:list[str], current_role:str, available_roles:list[str], handle_ownership)->dict:
+def wrangle_network_policy(self, database_name:str, schema_name:str, env_database_prefix:str, env_role_prefix:str, deploy_db_name:str, ignore_roles_list:str, deploy_tag_list:list[str], current_role:str, available_roles:list[str], handle_ownership, semaphore)->dict:
     if env_database_prefix is None:
         env_database_prefix = ''
     if env_role_prefix is None:
@@ -11,6 +11,7 @@ def wrangle_network_policy(self, database_name:str, schema_name:str, env_databas
     for d in tasks:
         full_policy_name = database_name + '.' + schema_name + '.' + d['NETWORK_POLICY_NAME']
         if 'OWNER' in d and d['OWNER'] is not None and d['OWNER'] != '':
+            d['OWNER_SANS_JINJA'] = d['OWNER']
             d['OWNER'] = self._handle_ownership(handle_ownership, d['OWNER'], 'row access policy', full_policy_name, current_role, available_roles)
 
             if d['OWNER'] not in ignore_roles_list: # if role managed by deployer (not out of the box) then add the jinja reference

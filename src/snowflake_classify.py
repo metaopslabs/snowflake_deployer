@@ -89,6 +89,7 @@ def snowflake_classify(args:dict):
 
     conf = configurator(args)
     config = conf.get_config()
+    default_owner = config['DEPLOY_ROLE']
 
     try:
         logger.log('','Connecting to Snowflake')
@@ -136,18 +137,22 @@ def snowflake_classify(args:dict):
 
             tag = {}
             tag['TAG_NAME'] = 'SENSITIVITY'
+            tag['OWNER'] = default_owner
             writer.write_tag_file(db_name_sans_prefix, tags_schema_name, tag, ignore_existing)
 
             tag = {}
             tag['TAG_NAME'] = 'SEMANTIC'
+            tag['OWNER'] = default_owner
             writer.write_tag_file(db_name_sans_prefix, tags_schema_name, tag, ignore_existing)
 
             tag = {}
             tag['TAG_NAME'] = 'CLASSIFICATION_CATEGORY'
+            tag['OWNER'] = default_owner
             writer.write_tag_file(db_name_sans_prefix, tags_schema_name, tag, ignore_existing)
 
             tag = {}
             tag['TAG_NAME'] = 'CLASSIFICATION_PROBABILITY'
+            tag['OWNER'] = default_owner
             writer.write_tag_file(db_name_sans_prefix, tags_schema_name, tag, ignore_existing)
 
 

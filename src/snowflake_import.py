@@ -11,8 +11,10 @@ import threading
 from time import sleep
 import time
 import traceback
+import queue
 
 def task_warehouse(semaphore, writer, sf, config:dict, tn:str, wh:dict, logger):
+    #logger.log(threading.current_thread().name,'pre')
     with semaphore:
         thread_start_time = time.time()
         thread_name = threading.current_thread().name
@@ -29,16 +31,19 @@ def task_warehouse(semaphore, writer, sf, config:dict, tn:str, wh:dict, logger):
             logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_role(semaphore, writer, sf, config:dict, tn:str, r:dict, logger):
+    #logger.log(threading.current_thread().name,'pre')
     with semaphore:
         thread_start_time = time.time()
         thread_name = threading.current_thread().name
         try:
             logger.log(thread_name,'Start')
+            #logQueue.put_nowait((thread_name,'Start'))
             writer.write_role_file(r)
 
             #print(f'Thread {name} End')
             msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
             logger.log(thread_name,msg)
+            #logQueue.put_nowait((thread_name,msg))
         except Exception as ex:
             traceback_text = traceback.format_exc() # get error traceback
             msg = 'error (%s seconds) - see error log at end' % (round(time.time() - thread_start_time,1))
@@ -46,6 +51,7 @@ def task_role(semaphore, writer, sf, config:dict, tn:str, r:dict, logger):
             logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_db(semaphore, writer, sf, config:dict, tn:str, db:dict, current_role:str, available_roles:list, logger):
+    #logger.log(threading.current_thread().name,'pre')
     with semaphore:
         thread_start_time = time.time()
         thread_name = threading.current_thread().name
@@ -57,13 +63,40 @@ def task_db(semaphore, writer, sf, config:dict, tn:str, db:dict, current_role:st
             #####################################################
             # Schemas
             #schemas = sf.schemas_get(db['DATABASE_NAME'],config['DEPLOY_DATABASE_NAME'],config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
-            schemas = wrangler.wrangle_schema(db['DATABASE_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            schemas = []
+            if not config['IMPORT_OBJECT_TYPES'] or 'SCHEMA' in config['IMPORT_OBJECT_TYPES']:
+                schemas = wrangler.wrangle_schema(db['DATABASE_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
         
             for schema in schemas:
                 if schema['SCHEMA_NAME'] not in ['INFORMATION_SCHEMA']:  
                     tn2 = db['DATABASE_NAME'] + '.' + schema['SCHEMA_NAME'] + ' [schema]'
                     t2 = threading.Thread(target=task_schema, name=tn2, args=(semaphore, writer, sf, config, tn2, db['DATABASE_NAME'], db['DATABASE_NAME_SANS_ENV'], schema, current_role, available_roles, logger))
                     t2.start()
+                    #t2.join()
+
+            #####################################################
+            # Stored Procs
+            #ps = sf.procedures_get(database_name, schema['SCHEMA_NAME'], config['ENV_PROCEDURE_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
+            procs = []
+            if not config['IMPORT_OBJECT_TYPES'] or 'PROCEDURE' in config['IMPORT_OBJECT_TYPES']:
+                procs = wrangler.wrangle_procedure(db['DATABASE_NAME'], config['ENV_PROCEDURE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+            for p in procs:
+                #tnp = database_name + '.' + schema['SCHEMA_NAME'] + '.' + p['PROCEDURE_NAME'] + p['PROCEDURE_SIGNATURE_TYPES'] + ' [sp]'
+                tnp = db['DATABASE_NAME'] + '.' + p['SCHEMA_NAME'] + '.' + p['PROCEDURE_NAME'] + p['PROCEDURE_SIGNATURE_TYPES'] + ' [sp]'
+                t3 = threading.Thread(target=task_procedure, name=tnp, args=(semaphore, writer, sf, config, tnp, db['DATABASE_NAME'], db['DATABASE_NAME_SANS_ENV'], p['SCHEMA_NAME'], p, logger))
+                t3.start()
+
+            #####################################################
+            # Functions
+            #fs = sf.functions_get(database_name, schema['SCHEMA_NAME'], config['ENV_FUNCTION_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
+            funcs = []
+            if not config['IMPORT_OBJECT_TYPES'] or 'FUNCTION' in config['IMPORT_OBJECT_TYPES']:
+                funcs = wrangler.wrangle_function(db['DATABASE_NAME'], config['ENV_FUNCTION_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+            for f in funcs:
+                tnf = db['DATABASE_NAME'] + '.' + f['SCHEMA_NAME'] + '.' + f['FUNCTION_NAME'] + f['FUNCTION_SIGNATURE_TYPES'] + ' [func]'
+                t4 = threading.Thread(target=task_function, name=tnf, args=(semaphore, writer, sf, config, tnf, db['DATABASE_NAME'], db['DATABASE_NAME_SANS_ENV'], f['SCHEMA_NAME'], f, logger))
+                t4.start()
+                #t4.join()
 
             #print(f'Thread {name} End')
             msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
@@ -75,6 +108,7 @@ def task_db(semaphore, writer, sf, config:dict, tn:str, db:dict, current_role:st
             logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, database_name_sans_env:str, schema:dict, current_role:str, available_roles:list, logger):
+    #logger.log(threading.current_thread().name,'pre')
     with semaphore:
         thread_start_time = time.time()
         thread_name = threading.current_thread().name
@@ -86,7 +120,9 @@ def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, datab
             #####################################################
             # Tags
             #tags = sf.tags_get(database_name, schema['SCHEMA_NAME'], current_role, available_roles, ignore_roles_list)
-            tags = wrangler.wrangle_tag(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            tags = []
+            if not config['IMPORT_OBJECT_TYPES'] or 'TAG' in config['IMPORT_OBJECT_TYPES']:
+                tags = wrangler.wrangle_tag(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
             for tag in tags:
                 #print('^^^^^^^^^ BEFORE WRITE TAG FILE ^^^^^^^^^^')
                 #print(tag)
@@ -96,53 +132,52 @@ def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, datab
             #####################################################
             # Objects (tables and views)
             #objects = sf.objects_get(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
-            objects = wrangler.wrangle_object(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            objects = []
+            if not config['IMPORT_OBJECT_TYPES'] or 'OBJECT' in config['IMPORT_OBJECT_TYPES']:
+                objects = wrangler.wrangle_object(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
             for obj in objects:
                 tn2 = database_name + '.' + schema['SCHEMA_NAME'] + '.' + obj['OBJECT_NAME'] + ' [object]'
                 t2 = threading.Thread(target=task_object, name=tn2, args=(semaphore, writer, sf, config, tn2, database_name, database_name_sans_env, schema['SCHEMA_NAME'], obj, logger))
                 t2.start()
+                #t2.join()
 
-            #####################################################
-            # Stored Procs
-            #ps = sf.procedures_get(database_name, schema['SCHEMA_NAME'], config['ENV_PROCEDURE_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
-            procs = wrangler.wrangle_procedure(database_name, schema['SCHEMA_NAME'], config['ENV_PROCEDURE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-            for p in procs:
-                tnp = database_name + '.' + schema['SCHEMA_NAME'] + '.' + p['PROCEDURE_NAME'] + p['PROCEDURE_SIGNATURE_TYPES'] + ' [sp]'
-                t3 = threading.Thread(target=task_procedure, name=tnp, args=(semaphore, writer, sf, config, tnp, database_name, database_name_sans_env, schema['SCHEMA_NAME'], p, logger))
-                t3.start()
             
-            #####################################################
-            # Functions
-            #fs = sf.functions_get(database_name, schema['SCHEMA_NAME'], config['ENV_FUNCTION_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
-            funcs = wrangler.wrangle_function(database_name, schema['SCHEMA_NAME'], config['ENV_FUNCTION_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-            for f in funcs:
-                tnf = database_name + '.' + schema['SCHEMA_NAME'] + '.' + f['FUNCTION_NAME'] + f['FUNCTION_SIGNATURE_TYPES'] + ' [func]'
-                t4 = threading.Thread(target=task_function, name=tnf, args=(semaphore, writer, sf, config, tnf, database_name, database_name_sans_env, schema['SCHEMA_NAME'], f, logger))
-                t4.start()
+       
+            
+            
 
             #####################################################
             # Tasks
-            tasks = wrangler.wrangle_task(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            tasks = []
+            if not config['IMPORT_OBJECT_TYPES'] or 'TASK' in config['IMPORT_OBJECT_TYPES']:
+                tasks = wrangler.wrangle_task(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
             for tsk in tasks:
                 tntsk = database_name + '.' + schema['SCHEMA_NAME'] + '.' + tsk['TASK_NAME'] + ' [task]'
                 t5 = threading.Thread(target=task_task, name=tntsk, args=(semaphore, writer, sf, config, tntsk, database_name, database_name_sans_env, schema['SCHEMA_NAME'], tsk, logger))
                 t5.start()
+                #t5.join()
 
             #####################################################
             # Masking Policies
-            masking_policies = wrangler.wrangle_masking_policy(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            masking_policies = []
+            if not config['IMPORT_OBJECT_TYPES'] or 'MASKING POLICY' in config['IMPORT_OBJECT_TYPES']:
+                masking_policies = wrangler.wrangle_masking_policy(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
             for mpol in masking_policies:
                 tnmp = database_name + '.' + schema['SCHEMA_NAME'] + '.' + mpol['MASKING_POLICY_NAME'] + ' [masking policy]'
                 t6 = threading.Thread(target=task_masking_policy, name=tnmp, args=(semaphore, writer, sf, config, tnmp, database_name, database_name_sans_env, schema['SCHEMA_NAME'], mpol, logger))
                 t6.start()
+                #t6.join()
 
             #####################################################
             # Row Access Policies
-            row_access_policies = wrangler.wrangle_row_access_policy(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            row_access_policies = []
+            if not config['IMPORT_OBJECT_TYPES'] or 'ROW ACCESS POLICY' in config['IMPORT_OBJECT_TYPES']:
+                row_access_policies = wrangler.wrangle_row_access_policy(database_name, schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
             for rap in row_access_policies:
                 tnrap = database_name + '.' + schema['SCHEMA_NAME'] + '.' + rap['ROW_ACCESS_POLICY_NAME'] + ' [row access policy]'
                 t7 = threading.Thread(target=task_row_access_policy, name=tnrap, args=(semaphore, writer, sf, config, tnrap, database_name, database_name_sans_env, schema['SCHEMA_NAME'], rap, logger))
                 t7.start()
+                #t7.join()
 
             #print(f'Thread {name} End')
             msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
@@ -154,13 +189,14 @@ def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, datab
             logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_object(semaphore, writer, sf, config:dict, tn, database_name:str, database_name_sans_env:str, schema_name:str, obj:dict, logger):
+    #logger.log(threading.current_thread().name,'pre')
     with semaphore:
         thread_start_time = time.time()
         thread_name = threading.current_thread().name
         try:
             logger.log(thread_name,'Start')
             #obj['COLUMNS'] = sf.columns_get(database_name, schema_name, obj['OBJECT_NAME'], config['ENV_DATABASE_PREFIX'])
-            obj['COLUMNS'] = wrangler.wrangle_column(database_name, schema_name, obj['OBJECT_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
+            #obj['COLUMNS'] = wrangler.wrangle_column(database_name, schema_name, obj['OBJECT_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
             writer.write_object_file(database_name_sans_env, schema_name, obj, config['OBJECT_METADATA_ONLY'], False)
 
             #print(f'Thread {name} End')
@@ -173,6 +209,7 @@ def task_object(semaphore, writer, sf, config:dict, tn, database_name:str, datab
             logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_procedure(semaphore, writer, sf, config:dict, tn:str, database_name:str, database_name_sans_env:str, schema_name:str, p:dict, logger):
+    #logger.log(threading.current_thread().name,'pre')
     with semaphore:
         thread_start_time = time.time()
         thread_name = threading.current_thread().name
@@ -191,6 +228,7 @@ def task_procedure(semaphore, writer, sf, config:dict, tn:str, database_name:str
             logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_function(semaphore, writer, sf, config:dict, tn:str, database_name:str, database_name_sans_env:str, schema_name:str, f:dict, logger):
+    #logger.log(threading.current_thread().name,'pre')
     with semaphore:
         thread_start_time = time.time()
         thread_name = threading.current_thread().name
@@ -209,6 +247,7 @@ def task_function(semaphore, writer, sf, config:dict, tn:str, database_name:str,
             logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_task(semaphore, writer, sf, config:dict, tn:str, database_name:str, database_name_sans_env:str, schema_name:str, tsk:dict, logger):
+    #logger.log(threading.current_thread().name,'pre')
     with semaphore:
         thread_start_time = time.time()
         thread_name = threading.current_thread().name
@@ -227,6 +266,7 @@ def task_task(semaphore, writer, sf, config:dict, tn:str, database_name:str, dat
             logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_masking_policy(semaphore, writer, sf, config:dict, tn:str, database_name:str, database_name_sans_env:str, schema_name:str, mp:dict, logger):
+    #logger.log(threading.current_thread().name,'pre')
     with semaphore:
         thread_start_time = time.time()
         thread_name = threading.current_thread().name
@@ -245,6 +285,7 @@ def task_masking_policy(semaphore, writer, sf, config:dict, tn:str, database_nam
             logger.log_error(str(ex), thread_name, traceback_text)
 
 def task_row_access_policy(semaphore, writer, sf, config:dict, tn:str, database_name:str, database_name_sans_env:str, schema_name:str, rap:dict, logger):
+    #logger.log(threading.current_thread().name,'pre')
     with semaphore:
         thread_start_time = time.time()
         thread_name = threading.current_thread().name
@@ -263,15 +304,40 @@ def task_row_access_policy(semaphore, writer, sf, config:dict, tn:str, database_
             logger.log_error(str(ex), thread_name, traceback_text)
 
 
+def loop_logger(q:queue, keepRunning:bool, logger):
+    thread_outputs = dict()
+
+    while keepRunning:
+        try:
+            thread_name, msg = q.get_nowait()
+            logger.log(thread_name,msg)
+        except queue.Empty:
+            # because the queue is used to update, there's no need to wait or block.
+            pass
+
+        #sys.stdout.write('\r' + pretty_output)
+        #sys.stdout.flush()
+        time.sleep(1)
+
 def snowflake_import(args:dict):
+    global logQueue
     start_time = time.time()
 
     logging.basicConfig(level=logging.ERROR)
-    logger = deploy_logger('info')
 
     conf = configurator(args)
     config = conf.get_config()
 
+    ###############################################################################################################
+    #                                                   Logging
+    ###############################################################################################################
+    
+    #logQueue = queue.Queue()
+    #keepLoggerRunning = True
+    logger = deploy_logger('info')
+    #logger_thread = threading.Thread(target=loop_logger, name='logger_thread', args=(logQueue, keepLoggerRunning, logger))
+    #logger_thread.start()
+    
     ###############################################################################################################
     #                                                   Defaults
     ###############################################################################################################
@@ -316,42 +382,65 @@ def snowflake_import(args:dict):
         
         # Multithreading set up
         semaphore = threading.Semaphore(config['MAX_THREADS'])
-        threads = []
+        threads_role = []
+        threads_wh = []
+        threads_db = []
 
-        #####################################################
-        # DATA START
         logger.log('','Beginning to retrieve Snowflake metadata')
 
+        #####################################################
+        # INSTANCE START
+
+        # Roles
+        #rs = sf.roles_get(config['ENV_ROLE_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
+        rs = []
+        if not config['IMPORT_OBJECT_TYPES'] or 'ROLE' in config['IMPORT_OBJECT_TYPES']:
+            rs = wrangler.wrangle_role(config['ENV_ROLE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+            
+        for r in rs:
+            tnr = r['ROLE_NAME'] + ' [role]'
+            t = threading.Thread(target=task_role, name=tnr, args=(semaphore, writer, sf, config, tnr, r, logger))
+            threads_role.append(t)
+
+        for t in threads_role:
+            t.start()
+        for t in threads_role:
+            t.join()
+
+        # Warehouses
+        #whs = sf.warehouses_get(config['ENV_WAREHOUSE_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
+        whs = []
+        if not config['IMPORT_OBJECT_TYPES'] or 'WAREHOUSE' in config['IMPORT_OBJECT_TYPES']:
+            whs = wrangler.wrangle_warehouse(config['ENV_WAREHOUSE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
+        
+        for wh in whs:
+            tnw = wh['WAREHOUSE_NAME'] + ' [warehouse]'
+            t = threading.Thread(target=task_warehouse, name=tnw, args=(semaphore, writer, sf, config, tnw, wh, logger))
+            threads_wh.append(t)
+        
+        for t in threads_wh:
+            t.start()
+        for t in threads_wh:
+            t.join()
+        #####################################################
+        # DATA START
+        
         # Databases
         #dbs = sf.databases_get(excluded_databases,config['DEPLOY_DATABASE_NAME'],config['ENV_DATABASE_PREFIX'], ignore_roles_list)
-        dbs = wrangler.wrangle_database(config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], excluded_databases, config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'], import_databases)
+        dbs = []
+        if not config['IMPORT_OBJECT_TYPES'] or 'DATABASE' in config['IMPORT_OBJECT_TYPES']:
+            dbs = wrangler.wrangle_database(config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], excluded_databases, config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'], import_databases,semaphore)
         for db in dbs:
             if db['DATABASE_NAME'] not in excluded_databases:
                 if import_databases == [] or db['DATABASE_NAME'] in import_databases:
                     tn =  db['DATABASE_NAME'] + ' [database]'
                     t = threading.Thread(target=task_db, name=tn, args=(semaphore, writer, sf, config, tn, db, current_role, available_roles, logger))
-                    threads.append(t)
+                    threads_db.append(t)
 
-        #####################################################
-        # INSTANCE START
-
-        # Warehouses
-        #whs = sf.warehouses_get(config['ENV_WAREHOUSE_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
-        whs = wrangler.wrangle_warehouse(config['ENV_WAREHOUSE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-        
-        for wh in whs:
-            tnw = wh['WAREHOUSE_NAME'] + ' [warehouse]'
-            t = threading.Thread(target=task_warehouse, name=tnw, args=(semaphore, writer, sf, config, tnw, wh, logger))
-            threads.append(t)
-        
-
-        # Roles
-        #rs = sf.roles_get(config['ENV_ROLE_PREFIX'], config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
-        rs = wrangler.wrangle_role(config['ENV_ROLE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'])
-        for r in rs:
-            tnr = r['ROLE_NAME'] + ' [role]'
-            t = threading.Thread(target=task_role, name=tnr, args=(semaphore, writer, sf, config, tnr, r, logger))
-            threads.append(t)
+        for t in threads_db:
+            t.start()
+        for t in threads_db:
+            t.join()
             
         # Masking Policies
         
@@ -359,19 +448,20 @@ def snowflake_import(args:dict):
         # Thread management
 
         # Kick off all threads to begin execution
-        for t in threads:
-            t.start()
+        #for t in threads:
+        #    t.start()
 
         # if threads are not joined, the script will continue to run while the threads are also running.
         # Joining the threads means we will wait here until all the threads are done processing before continuing
-        for t in threads:
-            t.join()
+        #for t in threads:
+        #    t.join()
 
         # Wait till all threads have finished
         while len(threading.enumerate()) > 1:
             #print(len(threading.enumerate()))
             sleep(1)
 
+        #keepLoggerRunning = False
         logger.log('','all objects have been pulled')
         msg = "--- Executed in %s seconds ---" % (round(time.time() - start_time,1))
         logger.log('',msg)

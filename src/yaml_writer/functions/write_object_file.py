@@ -6,22 +6,26 @@ def write_object_file(self,database_name:str, schema_name:str, d: dict, object_m
     yml_path = 'snowflake/data/' + database_name + '/' + schema_name + '/OBJECTS/' + database_name + '__' + schema_name + '__' + d['OBJECT_NAME'] + '.yml'
     
     data = self.create_parent_load_data(yml_path)
-
+    #print('$$$$$$$$$$$ file data $$$$$$$$$$$')
+    #print(data)
+    #print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
     data['OBJECT_TYPE']=self.choose_value_string(data, 'OBJECT_TYPE', d,'OBJECT_TYPE', var.EMPTY_STRING)
     data['COMMENT']=self.choose_value_string(data, 'COMMENT', d,'COMMENT', var.EMPTY_STRING)
     data['OWNER']=self.choose_value_string(data, 'OWNER', d,'OWNER', var.EMPTY_STRING)
     data['RETENTION_TIME_IN_DAYS'] = self.choose_value_string(data, 'RETENTION_TIME_IN_DAYS', d,'RETENTION_TIME_IN_DAYS', var.EMPTY_STRING)
     
-    # Can always take value from db
-    if d['ROW_ACCESS_POLICY'] == {}:
-        data['ROW_ACCESS_POLICY'] = {}
-    else:
+
+    if 'ROW_ACCESS_POLICY' in d and d['ROW_ACCESS_POLICY'] != {}:
         row_policy_jinjafied = {}
         row_policy_jinjafied['NAME'] = self.convert_for_yaml_write(d['ROW_ACCESS_POLICY']['NAME'])
         row_policy_jinjafied['INPUT_COLUMNS'] = d['ROW_ACCESS_POLICY']['INPUT_COLUMNS'] 
         data['ROW_ACCESS_POLICY'] = row_policy_jinjafied
+    elif 'ROW_ACCESS_POLICY' in data and data['ROW_ACCESS_POLICY'] != {}:
+        data['ROW_ACCESS_POLICY'] = data['ROW_ACCESS_POLICY']
+    else:
+        data['ROW_ACCESS_POLICY'] = {}
 
-    if 'TAGS' in d and d['TAGS'] != []:
+    if ('TAGS' in d and d['TAGS'] != []):
         #if not override_existing_tags and 'TAGS' in data:
         #    # first grab file tags and then override with tags passed in
         #    tmp_tags = data['TAGS']
@@ -33,14 +37,18 @@ def write_object_file(self,database_name:str, schema_name:str, d: dict, object_m
             data['TAGS'] = self.choose_list_objects_file_trumps(d['TAGS'], data['TAGS'])
         else:
             data['TAGS'] = d['TAGS']
+    elif ('TAGS' in data and data['TAGS'] != []):
+        data['TAGS'] = data['TAGS']
     else:
         data['TAGS']=var.EMPTY_STRING
 
-    if 'GRANTS' in d and d['GRANTS'] != []:
+    if ('GRANTS' in d and d['GRANTS'] != []):
         if 'GRANTS' in data:
             data['GRANTS'] = self.choose_list_objects(d['GRANTS'], data['GRANTS'])
         else:
             data['GRANTS'] = d['GRANTS']
+    elif ('GRANTS' in data and data['GRANTS'] != []):
+        data['GRANTS'] = data['GRANTS']
     else:
         data['GRANTS']=var.EMPTY_STRING
 
@@ -50,8 +58,9 @@ def write_object_file(self,database_name:str, schema_name:str, d: dict, object_m
     if 'COLUMNS' in d and 'COLUMNS' in data:
         #print(data['COLUMNS'])
         for col in d['COLUMNS']:
-            tmp_col = col
+            tmp_col = {}
             col_name = col['NAME']
+            tmp_col['NAME'] = col_name
             if 'TAGS' in col:
                 input_tags = col['TAGS']
                 file_tags = []
@@ -72,7 +81,13 @@ def write_object_file(self,database_name:str, schema_name:str, d: dict, object_m
             new_cols.append(tmp_col)
         data['COLUMNS'] = new_cols
     elif 'COLUMNS' in d:
-        data['COLUMNS'] = d['COLUMNS']
+        for col in d['COLUMNS']:
+            tmp_col = {}
+            tmp_col['NAME'] = col['NAME'] if 'NAME' in col else []
+            tmp_col['TAGS'] = col['TAGS'] if 'TAGS' in col else []
+            new_cols.append(tmp_col)
+        data['COLUMNS'] = new_cols
+        
     #if 'RENAME' in data:
     #    del data['RENAME']
 

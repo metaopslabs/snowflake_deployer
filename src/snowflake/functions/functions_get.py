@@ -1,25 +1,25 @@
 from snowflake.connector import DictCursor
 import json
 
-def functions_get(self,database_name:str, schema_name:str)->dict:
+def functions_get(self,database_name:str)->dict:
     cur = self._conn.cursor(DictCursor)
     
-    schema_with_db = database_name + '.' + schema_name
+    #schema_with_db = database_name + '.' + schema_name
     info_sec_name = database_name + '.INFORMATION_SCHEMA.FUNCTIONS'
     
     query = '''
-        SELECT 
+        SELECT FUNCTION_SCHEMA,
             FUNCTION_NAME, FUNCTION_OWNER, ARGUMENT_SIGNATURE, IS_SECURE, DATA_TYPE, FUNCTION_LANGUAGE, COMMENT
             , RUNTIME_VERSION, IMPORTS, PACKAGES, HANDLER
             , FUNCTION_DEFINITION 
-        FROM identifier(%s) WHERE FUNCTION_SCHEMA = %s;
+        FROM identifier(%s) ;
     '''
     data=[]
     try:
-        cur.execute(query,(info_sec_name,schema_name))
+        cur.execute(query,(info_sec_name))
         for rec in cur:
             nw = {}
-
+            nw['SCHEMA_NAME'] = rec['FUNCTION_SCHEMA']
             nw['FUNCTION_NAME'] = rec['FUNCTION_NAME']
             #nw['FUNCTION_NAME_SANS_ENV'] = remove_prefix(rec['FUNCTION_NAME'],env_function_prefix)
             nw['COMMENT'] = rec['COMMENT']

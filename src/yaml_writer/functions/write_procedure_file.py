@@ -32,10 +32,10 @@ def write_procedure_file(self, database_name_sans_env:str, schema_name:str, d:di
     data['RETURNS'] = self.choose_value_string(data, 'RETURNS', d,'RETURNS', var.EMPTY_STRING)
     data['LANGUAGE'] = self.choose_value_string(data, 'LANGUAGE', d,'LANGUAGE', var.EMPTY_STRING)
     #data['NULL_HANDLING'] = p['NULL HANDLING']
-    data['EXECUTE_AS'] = self.choose_value_string(data, 'EXECUTE_AS', d,'EXECUTE AS', var.EMPTY_STRING)
+    data['EXECUTE_AS'] = self.choose_value_string(data, 'EXECUTE_AS', d,'EXECUTE_AS', var.EMPTY_STRING)
     data['OWNER'] = self.choose_value_string(data, 'OWNER', d,'OWNER', var.EMPTY_STRING)
     data['COMMENT'] = self.choose_value_string(data, 'COMMENT', d,'COMMENT', var.EMPTY_STRING)
-    data['IS_SECURE'] = True if d['IS_SECURE'] == 'Y' else False
+    data['IS_SECURE'] = True if d['IS_SECURE'] == 'Y' or d['IS_SECURE'] == True else False
 
     #print('#############################')
     #print(data)

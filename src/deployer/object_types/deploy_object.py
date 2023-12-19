@@ -1,5 +1,5 @@
 from src.common.exceptions import feature_not_supported
-def deploy_object(self, object_name:str, file_hash:str, config:dict)->str:
+def deploy_object(self, object_name:str, file_hash:str, config:dict, object_state_dict:dict, db_hash_dict:dict)->str:
     # object_name in format <DATABASE_NAME>.<SCHEMA_NAME>.<OBJECT_NAME> 
     # THIS CAN BE A TABLE OR VIEW!!!
     
@@ -41,7 +41,34 @@ def deploy_object(self, object_name:str, file_hash:str, config:dict)->str:
         return_status = 'E'
     else: 
         # Check if schema exists 
-        object_exists, sf_owner, last_ddl = self._sf.object_check_exists(object_name)
+        #object_exists, sf_owner, last_ddl = self._sf.object_check_exists(object_name)
+        if object_name in db_hash_dict:
+            object_exists = True
+            sf_owner = db_hash_dict[object_name]['owner']
+            db_hash = db_hash_dict[object_name]['db_hash']
+            #last_ddl = db_hash_dict[object_name]['last_ddl']
+        else:
+            object_exists = False
+            sf_owner = ''
+            db_hash = ''
+            #last_ddl = ''
+            
+        if object_name in object_state_dict and object_state_dict[object_name]['OBJECT_TYPE'].upper() == 'OBJECT':
+            state_file_hash = object_state_dict[object_name]['DEPLOY_HASH']
+            state_db_hash = object_state_dict[object_name]['DB_HASH']
+        else:
+            state_file_hash = ''
+            state_db_hash = ''
+
+        #print('************************************')
+        #print(object_state_dict)
+        #print('************************************')
+        #print(object_name)
+        #print(state_file_hash)
+        #print(file_hash)
+        #print(state_db_hash)
+        #print(db_hash)
+        #print('************************************')
 
         if not object_exists:
             # Create Object
@@ -55,20 +82,19 @@ def deploy_object(self, object_name:str, file_hash:str, config:dict)->str:
             self._handle_ownership(sf_owner, 'table', object_name)
 
             # Get file hash from Snowflake & check if exist
-            sf_deploy_hash, sf_last_update = self._sf.deploy_hash_and_last_update_get(self._deploy_db_name, object_name, 'table')
-            #print('###############')
-            #print(last_ddl)
-            #print(sf_last_update)
-            #print('##############')
-            if sf_deploy_hash != file_hash or last_ddl > sf_last_update:
+            #sf_deploy_hash, sf_last_update = self._sf.deploy_hash_and_last_update_get(self._deploy_db_name, object_name, 'table')
+            
+            #if sf_deploy_hash != file_hash or last_ddl > sf_last_update:
+            if state_file_hash != file_hash or state_db_hash != db_hash:
                 self._sf.object_alter(object_name, DATA_RETENTION_TIME_IN_DAYS, COMMENT, OWNER, CHANGE_TRACKING, ROW_ACCESS_POLICY, TAGS, GRANTS)
                 
                 for column in COLUMNS:
                     if 'TAGS' in column: # only update column if something exists to update
                         self._sf.column_alter(object_name, column['NAME'], column['TAGS'])
                 
-                self._sf.deploy_hash_apply(object_name, file_hash, 'TABLE', self._deploy_db_name)
-
+                db_hash_new = self._hasher.hash_object(DATA_RETENTION_TIME_IN_DAYS, COMMENT, OWNER, CHANGE_TRACKING, TAGS, COLUMNS, GRANTS, ROW_ACCESS_POLICY)
+                self._sf.deploy_hash_apply(object_name, 'OBJECT', file_hash, '', db_hash_new, self._deploy_env, self._deploy_db_name)
+        
                 return_status = 'U'
             else:
                 # else - ignore - everything up to date if hashes match

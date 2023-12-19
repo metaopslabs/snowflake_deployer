@@ -1,4 +1,6 @@
 import logging
+import threading
+#import sys
 #import sys
 #class Unbuffered(object):
 #   def __init__(self, stream):
@@ -37,12 +39,22 @@ class deploy_logger:
             log_msg = msg
         else:
             log_msg = object_name + ': ' + msg
+        #print(log_msg, flush=True)
+        #print(log_msg)
+        #sys.stdout.write(log_msg)
+        #sys.stdout.flush()
+        # acquire the lock
+        lock = threading.Lock()
+        lock.acquire()
+        # report message
         print(log_msg, flush=True)
-        
+        # release the lock
+        lock.release()
+
     def highlight(self, msg:str):
         print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
         print(msg)
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', flush=True)
 
     def show_all_errors(self):
         error_count = self.get_error_count()

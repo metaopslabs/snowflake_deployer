@@ -1,20 +1,22 @@
 from snowflake.connector import DictCursor
 import json
 
-def procedures_get(self,database_name:str, schema_name:str)->dict:
+def procedures_get(self,database_name:str)->dict:
     cur = self._conn.cursor(DictCursor)
     cur_show = self._conn.cursor(DictCursor)
     cur_desc = self._conn.cursor(DictCursor)
 
-    schema_with_db = database_name + '.' + schema_name
+    #schema_with_db = database_name + '.' + schema_name
     info_sec_name = database_name + '.INFORMATION_SCHEMA.PROCEDURES'
     
-    query = "SELECT PROCEDURE_NAME, PROCEDURE_OWNER, ARGUMENT_SIGNATURE, COMMENT FROM identifier(%s) WHERE PROCEDURE_SCHEMA = %s;"
+    query = "SELECT PROCEDURE_SCHEMA, PROCEDURE_NAME, PROCEDURE_OWNER, ARGUMENT_SIGNATURE, COMMENT FROM identifier(%s);"
     data=[]
     try:
-        cur.execute(query,(info_sec_name,schema_name))
+        cur.execute(query,(info_sec_name))
         for rec in cur:
+            schema_with_db = database_name + '.' + rec['PROCEDURE_SCHEMA']
             nw = {}
+            nw['SCHEMA_NAME'] = rec['PROCEDURE_SCHEMA']
             nw['PROCEDURE_NAME'] = rec['PROCEDURE_NAME']
             nw['COMMENT'] = rec['COMMENT']
             nw['OWNER'] = rec['PROCEDURE_OWNER']
@@ -65,8 +67,9 @@ def procedures_get(self,database_name:str, schema_name:str)->dict:
                     val = json.loads(val_string.replace("'",'"'))
                 else:
                     val = val_string
-                nw[key] = val
-                
+                new_key = key.replace(' ','_')
+                nw[new_key] = val
+            #print(nw)
             data.append(nw)
     except Exception as ex:
         msg = 'SQL Error:\n\nQuery: ' + query + '\n\nError Message:\n' + str(ex) + '\n\n'

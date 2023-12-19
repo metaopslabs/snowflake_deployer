@@ -1,4 +1,4 @@
-def deploy_function(self, function_name_with_signature:str, file_hash:str, file_hash_code:str, config:dict, body_code:str)->str:
+def deploy_function(self, function_name_with_signature:str, file_hash:str, file_hash_code:str, config:dict, body_code:str, object_state_dict:dict, db_hash_dict:dict)->str:
     # function_name_with_signature = <db>.<schema>.<name>__<signature>
     
     # Object name in deployer wrapper includes the signature (ie. (varchar,int) ) as 
@@ -6,6 +6,7 @@ def deploy_function(self, function_name_with_signature:str, file_hash:str, file_
     function_name = function_name_with_signature.split('__')[0]
     function_signature = function_name_with_signature.split('__')[1]
     sql_function_name = '"' + function_name.split('.')[0] + '"."' + function_name.split('.')[1] + '"."' + function_name.split('.')[2] + '"' + function_name_with_signature.split('__')[1]
+    function_key = function_name.split('.')[0] + '.' + function_name.split('.')[1] + '.' + function_name.split('.')[2] + '' + function_name_with_signature.split('__')[1]
 
     # Get vars from config
     INPUT_ARGS = config['INPUT_ARGS'] if 'INPUT_ARGS' in config and config['INPUT_ARGS'] != '' and config['INPUT_ARGS'] is not None else []
@@ -23,7 +24,7 @@ def deploy_function(self, function_name_with_signature:str, file_hash:str, file_
     if config['LANGUAGE'] == 'PYTHON':
         IMPORTS = config['IMPORTS'] if 'IMPORTS' in config  and config['IMPORTS'] != '' and config['IMPORTS'] is not None else []
         HANDLER = config['HANDLER'] if 'HANDLER' in config else None
-        RUNTIME_VERSION = config['RUNTIME_VERSION'] if 'RUNTIME_VERSION' in config else None
+        RUNTIME_VERSION = str(config['RUNTIME_VERSION']) if 'RUNTIME_VERSION' in config else None
         PACKAGES = config['PACKAGES'] if 'PACKAGES' in config  and config['PACKAGES'] != '' and config['PACKAGES'] is not None else []
         #INSTALLED_PACKAGES = config['INSTALLED_PACKAGES'] if 'INSTALLED_PACKAGES' in config else None
     else:
@@ -61,19 +62,53 @@ def deploy_function(self, function_name_with_signature:str, file_hash:str, file_
         return_status = 'E'
     else: 
         # Check if db exists 
-        function_exists = self._sf.function_check_exists(function_name, function_signature)
+        #function_exists = self._sf.function_check_exists(function_name, function_signature)
+        if function_key in db_hash_dict:
+            function_exists = True
+            sf_owner = db_hash_dict[function_key]['owner']
+            db_hash = db_hash_dict[function_key]['db_hash']
+        else:
+            function_exists = False
+            sf_owner = ''
+            db_hash = ''
+
+        if function_key in object_state_dict and object_state_dict[function_key]['OBJECT_TYPE'].upper() == 'FUNCTION':
+            state_file_hash = object_state_dict[function_key]['DEPLOY_HASH']
+            state_db_hash = object_state_dict[function_key]['DB_HASH']
+            state_file_hash_code = object_state_dict[function_key]['DEPLOY_HASH_CODE']
+        else:
+            state_file_hash = ''
+            state_db_hash = ''
+            state_file_hash_code = ''
+
+        #print('%%***%%%*****%%%%%%%%%******')
+        #print(db_hash_dict)
+        #print('************************************')
+        #print(function_key)
+        #print(state_file_hash)
+        #print(file_hash)
+        #print(state_file_hash_code)
+        #print(file_hash_code)
+        #print(state_db_hash)
+        #print(db_hash)
+        #print('$$$$$')
+        #print(function_exists)
+        #print('************************************')
 
         if not function_exists:
             # Create database
             self._sf.function_create(function_name, sql_function_name, IS_SECURE, INPUT_ARGS, RETURNS, LANGUAGE, COMMENT, BODY, IMPORTS, HANDLER, RUNTIME_VERSION, PACKAGES, OWNER, TAGS, GRANTS, self._deploy_role)
+
+            db_hash_new = self._hasher.hash_function(INPUT_ARGS, IS_SECURE, RETURNS, LANGUAGE, OWNER, COMMENT, TAGS, BODY, GRANTS, IMPORTS, HANDLER, RUNTIME_VERSION, PACKAGES)
+            self._sf.deploy_hash_apply(function_key, 'FUNCTION', file_hash, file_hash_code, db_hash_new, self._deploy_env, self._deploy_db_name)
 
             #self._sf.deploy_hash_apply(sql_function_name, file_hash, 'FUNCTION', self._deploy_db_name)
             #self._sf.deploy_code_hash_apply(sql_function_name, file_hash_code, 'FUNCTION', self._deploy_db_name)
         
             return_status = 'C'
         else:
-            func_details = self._sf.function_get(function_name, function_signature)
-            sf_owner = func_details['owner']
+            #func_details = self._sf.function_get(function_name, function_signature)
+            #sf_owner = func_details['owner']
             self._handle_ownership(sf_owner, 'function', function_name)
 
             # Get file hash from Snowflake & check if exist
@@ -82,8 +117,13 @@ def deploy_function(self, function_name_with_signature:str, file_hash:str, file_
             
 
             #if sf_deploy_hash != file_hash or sf_deploy_code_hash != file_hash_code:
-            if func_details['RETURNS']!=RETURNS or func_details['COMMENT']!= COMMENT or func_details['BODY']!= BODY or func_details['OWNER']!= OWNER or func_details['TAGS']!= TAGS or func_details['GRANTS']!= GRANTS or ('IMPORTS' in func_details and func_details['IMPORTS']!= IMPORTS) or ('HANDLER' in func_details and func_details['HANDLER']!= IMPORTS) or ('RUNTIME_VERSION' in func_details and func_details['RUNTIME_VERSION']!= IMPORTS) or ('PACKAGES' in func_details and func_details['PACKAGES']!= IMPORTS):
-                self._sf.function_create(function_name, function_name, IS_SECURE, INPUT_ARGS, RETURNS, LANGUAGE, COMMENT, BODY, IMPORTS, HANDLER, RUNTIME_VERSION, PACKAGES, OWNER, TAGS, GRANTS, self._deploy_role)
+            #if func_details['RETURNS']!=RETURNS or func_details['COMMENT']!= COMMENT or func_details['BODY']!= BODY or func_details['OWNER']!= OWNER or func_details['TAGS']!= TAGS or func_details['GRANTS']!= GRANTS or ('IMPORTS' in func_details and func_details['IMPORTS']!= IMPORTS) or ('HANDLER' in func_details and func_details['HANDLER']!= IMPORTS) or ('RUNTIME_VERSION' in func_details and func_details['RUNTIME_VERSION']!= IMPORTS) or ('PACKAGES' in func_details and func_details['PACKAGES']!= IMPORTS):
+            if state_file_hash != file_hash or state_file_hash_code != file_hash_code or state_db_hash != db_hash:
+                self._sf.function_create(function_name, sql_function_name, IS_SECURE, INPUT_ARGS, RETURNS, LANGUAGE, COMMENT, BODY, IMPORTS, HANDLER, RUNTIME_VERSION, PACKAGES, OWNER, TAGS, GRANTS, self._deploy_role)
+                db_hash_new = self._hasher.hash_function(INPUT_ARGS, IS_SECURE, RETURNS, LANGUAGE, OWNER, COMMENT, TAGS, BODY, GRANTS, IMPORTS, HANDLER, RUNTIME_VERSION, PACKAGES)
+                self._sf.deploy_hash_apply(function_key, 'FUNCTION', file_hash, file_hash_code, db_hash_new, self._deploy_env, self._deploy_db_name)
+
+                
                 #self._sf.deploy_hash_apply(sql_function_name, file_hash, 'FUNCTION', self._deploy_db_name)
                 #self._sf.deploy_code_hash_apply(sql_function_name, file_hash_code, 'FUNCTION', self._deploy_db_name)
         
