@@ -59,7 +59,8 @@ def task_db(semaphore, writer, sf, config:dict, tn:str, db:dict, current_role:st
             logger.log(thread_name,'Start')
 
             writer.write_database_file(db)
-                
+            
+            threads_list = []
             #####################################################
             # Schemas
             #schemas = sf.schemas_get(db['DATABASE_NAME'],config['DEPLOY_DATABASE_NAME'],config['ENV_DATABASE_PREFIX'], current_role, available_roles, ignore_roles_list)
@@ -71,7 +72,8 @@ def task_db(semaphore, writer, sf, config:dict, tn:str, db:dict, current_role:st
                 if schema['SCHEMA_NAME'] not in ['INFORMATION_SCHEMA']:  
                     tn2 = db['DATABASE_NAME'] + '.' + schema['SCHEMA_NAME'] + ' [schema]'
                     t2 = threading.Thread(target=task_schema, name=tn2, args=(semaphore, writer, sf, config, tn2, db['DATABASE_NAME'], db['DATABASE_NAME_SANS_ENV'], schema, current_role, available_roles, logger))
-                    t2.start()
+                    threads_list.append(t2)
+                    #t2.start()
                     #t2.join()
 
             #####################################################
@@ -84,7 +86,8 @@ def task_db(semaphore, writer, sf, config:dict, tn:str, db:dict, current_role:st
                 #tnp = database_name + '.' + schema['SCHEMA_NAME'] + '.' + p['PROCEDURE_NAME'] + p['PROCEDURE_SIGNATURE_TYPES'] + ' [sp]'
                 tnp = db['DATABASE_NAME'] + '.' + p['SCHEMA_NAME'] + '.' + p['PROCEDURE_NAME'] + p['PROCEDURE_SIGNATURE_TYPES'] + ' [sp]'
                 t3 = threading.Thread(target=task_procedure, name=tnp, args=(semaphore, writer, sf, config, tnp, db['DATABASE_NAME'], db['DATABASE_NAME_SANS_ENV'], p['SCHEMA_NAME'], p, logger))
-                t3.start()
+                threads_list.append(t3)
+                #t3.start()
 
             #####################################################
             # Functions
@@ -95,9 +98,15 @@ def task_db(semaphore, writer, sf, config:dict, tn:str, db:dict, current_role:st
             for f in funcs:
                 tnf = db['DATABASE_NAME'] + '.' + f['SCHEMA_NAME'] + '.' + f['FUNCTION_NAME'] + f['FUNCTION_SIGNATURE_TYPES'] + ' [func]'
                 t4 = threading.Thread(target=task_function, name=tnf, args=(semaphore, writer, sf, config, tnf, db['DATABASE_NAME'], db['DATABASE_NAME_SANS_ENV'], f['SCHEMA_NAME'], f, logger))
-                t4.start()
+                threads_list.append(t4)
+                #t4.start()
                 #t4.join()
 
+            for t in threads_list:
+                t.start()
+            for t in threads_list:
+                t.join()
+                
             #print(f'Thread {name} End')
             msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
             logger.log(thread_name,msg)
@@ -116,6 +125,8 @@ def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, datab
             logger.log(thread_name,'Start')
 
             writer.write_schema_file(database_name_sans_env, schema)
+
+            threads_list = []
 
             #####################################################
             # Tags
@@ -138,13 +149,10 @@ def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, datab
             for obj in objects:
                 tn2 = database_name + '.' + schema['SCHEMA_NAME'] + '.' + obj['OBJECT_NAME'] + ' [object]'
                 t2 = threading.Thread(target=task_object, name=tn2, args=(semaphore, writer, sf, config, tn2, database_name, database_name_sans_env, schema['SCHEMA_NAME'], obj, logger))
-                t2.start()
+                threads_list.append(t2)
+                #t2.start()
                 #t2.join()
 
-            
-       
-            
-            
 
             #####################################################
             # Tasks
@@ -154,7 +162,8 @@ def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, datab
             for tsk in tasks:
                 tntsk = database_name + '.' + schema['SCHEMA_NAME'] + '.' + tsk['TASK_NAME'] + ' [task]'
                 t5 = threading.Thread(target=task_task, name=tntsk, args=(semaphore, writer, sf, config, tntsk, database_name, database_name_sans_env, schema['SCHEMA_NAME'], tsk, logger))
-                t5.start()
+                threads_list.append(t5)
+                #t5.start()
                 #t5.join()
 
             #####################################################
@@ -165,7 +174,8 @@ def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, datab
             for mpol in masking_policies:
                 tnmp = database_name + '.' + schema['SCHEMA_NAME'] + '.' + mpol['MASKING_POLICY_NAME'] + ' [masking policy]'
                 t6 = threading.Thread(target=task_masking_policy, name=tnmp, args=(semaphore, writer, sf, config, tnmp, database_name, database_name_sans_env, schema['SCHEMA_NAME'], mpol, logger))
-                t6.start()
+                threads_list.append(t6)
+                #t6.start()
                 #t6.join()
 
             #####################################################
@@ -176,8 +186,15 @@ def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, datab
             for rap in row_access_policies:
                 tnrap = database_name + '.' + schema['SCHEMA_NAME'] + '.' + rap['ROW_ACCESS_POLICY_NAME'] + ' [row access policy]'
                 t7 = threading.Thread(target=task_row_access_policy, name=tnrap, args=(semaphore, writer, sf, config, tnrap, database_name, database_name_sans_env, schema['SCHEMA_NAME'], rap, logger))
-                t7.start()
+                threads_list.append(t7)
+                #t7.start()
                 #t7.join()
+
+            for t in threads_list:
+                t.start()
+            for t in threads_list:
+                t.join()
+                
 
             #print(f'Thread {name} End')
             msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
