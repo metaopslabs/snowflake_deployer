@@ -46,8 +46,8 @@ def wrangle_function(self, database_name:str, env_function_prefix:str, env_datab
     # async management
     for t in threads_all:
         t.start()
-    for t in threads_all:
-        t.join()
+    #for t in threads_all:
+    #    t.join()
 
     
 

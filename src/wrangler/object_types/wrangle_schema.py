@@ -40,8 +40,8 @@ def wrangle_schema(self, database_name:str, env_database_prefix:str, env_role_pr
     # async management
     for t in threads_all:
         t.start()
-    for t in threads_all:
-        t.join()
+    #for t in threads_all:
+    #    t.join()
 
     #while len(threading.enumerate()) > 1:
     #    sleep(1)

@@ -42,8 +42,8 @@ def wrangle_warehouse(self, env_warehouse_prefix:str, env_database_prefix:str, e
     # async management
     for t in threads_all:
         t.start()
-    for t in threads_all:
-        t.join()
+    #for t in threads_all:
+    #    t.join()
 
     #while len(threading.enumerate()) > 1:
     #    sleep(1)

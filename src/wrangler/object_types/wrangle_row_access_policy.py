@@ -40,8 +40,8 @@ def wrangle_row_access_policy(self, database_name:str, schema_name:str, env_data
     # async management
     for t in threads_all:
         t.start()
-    for t in threads_all:
-        t.join()
+    #for t in threads_all:
+    #    t.join()
 
     #while len(threading.enumerate()) > 1:
     #    sleep(1)

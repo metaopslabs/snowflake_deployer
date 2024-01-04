@@ -104,8 +104,8 @@ def task_db(semaphore, writer, sf, config:dict, tn:str, db:dict, current_role:st
 
             for t in threads_list:
                 t.start()
-            for t in threads_list:
-                t.join()
+            #for t in threads_list:
+            #    t.join()
                 
             #print(f'Thread {name} End')
             msg = 'created (%s seconds)' % (round(time.time() - thread_start_time,1))
@@ -192,8 +192,8 @@ def task_schema(semaphore, writer, sf, config:dict, tn, database_name:str, datab
 
             for t in threads_list:
                 t.start()
-            for t in threads_list:
-                t.join()
+            #for t in threads_list:
+            #    t.join()
                 
 
             #print(f'Thread {name} End')
