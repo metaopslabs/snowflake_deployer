@@ -41,8 +41,8 @@ def wrangle_task(self, database_name:str, schema_name:str, env_database_prefix:s
     # async management
     for t in threads_all:
         t.start()
-    for t in threads_all:
-        t.join()
+    #for t in threads_all:
+    #    t.join()
 
     #while len(threading.enumerate()) > 1:
     #    sleep(1)
