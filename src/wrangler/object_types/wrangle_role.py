@@ -19,7 +19,7 @@ def wrangle_role(self, env_role_prefix:str, env_database_prefix:str, deploy_db_n
         env_role_prefix = ''
 
     roles = self._sf.roles_get(env_role_prefix)  
-    
+    #print(roles)
     # Get tags & grants async for performce
     threads_all = []
     tag_dict = {}
@@ -40,8 +40,8 @@ def wrangle_role(self, env_role_prefix:str, env_database_prefix:str, deploy_db_n
     # async management
     for t in threads_all:
         t.start()
-    #for t in threads_all:
-    #    t.join()
+    for t in threads_all:
+        t.join()
 
     #while len(threading.enumerate()) > 1:
     #    sleep(1)

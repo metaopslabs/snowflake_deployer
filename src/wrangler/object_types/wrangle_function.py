@@ -2,19 +2,14 @@ from src.util.util import remove_prefix
 import threading
 from time import sleep
 
-def _get_grants(self_sf, semaphore, full_func_name:str, grant_dict:dict):
-    with semaphore:
-        grants_raw = self_sf._sf.grants_get(full_func_name, 'function')
-        grant_dict[full_func_name] = grants_raw
+def _get_grants(self_sf, full_func_name:str, grant_dict:dict):
+    grants_raw = self_sf._sf.grants_get(full_func_name, 'function')
+    grant_dict[full_func_name] = grants_raw
 
-def _get_tag_references(self_sf, semaphore, database_name:str, full_func_name:str, tag_dict:dict):
-    with semaphore:
-        tags_raw = self_sf._sf.tag_references_get(database_name, full_func_name, 'function') 
-        tag_dict[full_func_name] = tags_raw
-        #print('$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$')
-        #print(tag_dict)
-        #print('$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$*$')
-
+def _get_tag_references(self_sf, database_name:str, full_func_name:str, tag_dict:dict):
+    tags_raw = self_sf._sf.tag_references_get(database_name, full_func_name, 'function') 
+    tag_dict[full_func_name] = tags_raw
+        
 def wrangle_function(self, database_name:str, env_function_prefix:str, env_database_prefix:str, env_role_prefix:str, deploy_db_name:str, ignore_roles_list:str, deploy_tag_list:list[str], current_role:str, available_roles:list[str], handle_ownership, semaphore)->dict:
     if env_function_prefix is None:
         env_function_prefix = ''
@@ -34,18 +29,20 @@ def wrangle_function(self, database_name:str, env_function_prefix:str, env_datab
         full_func_name = database_name + '.' + schema_name + '.' + f['ARGUMENT_SIGNATURE_TO_MATCH'].replace(' ','')
 
         # async get all role grants
-        thread_name = 'grants_'+full_func_name
-        t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, full_func_name, grant_dict))
-        threads_all.append(t)
+        _get_grants(self, full_func_name, grant_dict)
+        #thread_name = 'functiongrants_'+full_func_name
+        #t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, full_func_name, grant_dict))
+        #threads_all.append(t)
 
         # async get all tag grants
-        thread_name = 'tags_'+full_func_name
-        t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, full_func_name, tag_dict))
-        threads_all.append(t)
+        _get_tag_references(self, database_name, full_func_name, tag_dict)
+        #thread_name = 'functiontags_'+full_func_name
+        #t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, full_func_name, tag_dict))
+        #threads_all.append(t)
 
     # async management
-    for t in threads_all:
-        t.start()
+    #for t in threads_all:
+    #    t.start()
     #for t in threads_all:
     #    t.join()
 

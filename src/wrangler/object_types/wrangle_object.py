@@ -3,25 +3,21 @@ import threading
 from time import sleep
 import json
 
-def _get_grants(self_sf, semaphore, object_name_with_db_schema:str, grant_dict:dict):
-    with semaphore:
-        grants_raw = self_sf._sf.grants_get(object_name_with_db_schema, 'table')
-        grant_dict[object_name_with_db_schema] = grants_raw
+def _get_grants(self_sf, object_name_with_db_schema:str, grant_dict:dict):
+    grants_raw = self_sf._sf.grants_get(object_name_with_db_schema, 'table')
+    grant_dict[object_name_with_db_schema] = grants_raw
 
-def _get_tag_references(self_sf, semaphore, database_name:str, object_name_with_db_schema:str, object_type:str, tag_dict:dict):
-    with semaphore:
-        tags_raw = self_sf._sf.tag_references_get(database_name, object_name_with_db_schema, object_type)
-        tag_dict[object_name_with_db_schema] = tags_raw
+def _get_tag_references(self_sf, database_name:str, object_name_with_db_schema:str, object_type:str, tag_dict:dict):
+    tags_raw = self_sf._sf.tag_references_get(database_name, object_name_with_db_schema, object_type)
+    tag_dict[object_name_with_db_schema] = tags_raw
 
-def _get_row_access_policies(self_sf, semaphore, object_name_with_db_schema:str, row_access_policy_dict:dict):
-    with semaphore:
-        row_access_policy = self_sf._sf.object_row_access_policy_reference(object_name_with_db_schema)
-        row_access_policy_dict[object_name_with_db_schema] = row_access_policy
+def _get_row_access_policies(self_sf, object_name_with_db_schema:str, row_access_policy_dict:dict):
+    row_access_policy = self_sf._sf.object_row_access_policy_reference(object_name_with_db_schema)
+    row_access_policy_dict[object_name_with_db_schema] = row_access_policy
 
-def _get_columns(self_sf, semaphore, object_name_with_db_schema, database_name, schema_name, object_name, columns_dict):
-    with semaphore:
-        cols = self_sf._sf.columns_get(database_name, schema_name, object_name)  
-        columns_dict[object_name_with_db_schema] = cols if cols is not None else []
+def _get_columns(self_sf, object_name_with_db_schema, database_name, schema_name, object_name, columns_dict):
+    cols = self_sf._sf.columns_get(database_name, schema_name, object_name)  
+    columns_dict[object_name_with_db_schema] = cols if cols is not None else []
 
 def wrangle_object(self, database_name:str, schema_name:str, env_database_prefix:str, env_role_prefix:str, deploy_db_name:str, ignore_roles_list:str, deploy_tag_list:list[str], current_role:str, available_roles:list[str], handle_ownership, semaphore)->dict:
     # database_name should include any db prefixes
@@ -42,26 +38,32 @@ def wrangle_object(self, database_name:str, schema_name:str, env_database_prefix
         object_name_with_db_schema = database_name + '.' + schema_name + '.' + o['OBJECT_NAME']
         
         # async get all role grants
-        thread_name = 'grants_'+object_name_with_db_schema
-        t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, object_name_with_db_schema, grant_dict))
-        threads_all.append(t)
+        _get_grants(self, object_name_with_db_schema, grant_dict)
+        #thread_name = 'grants_'+object_name_with_db_schema
+        #t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, object_name_with_db_schema, grant_dict))
+        #threads_all.append(t)
 
         # async get all tag grants
-        thread_name = 'tags_'+object_name_with_db_schema
-        t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, object_name_with_db_schema,o['OBJECT_TYPE'], tag_dict))
-        threads_all.append(t)
+        _get_tag_references(self, database_name, object_name_with_db_schema, o['OBJECT_TYPE'], tag_dict)
+        #thread_name = 'tags_'+object_name_with_db_schema
+        #t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, object_name_with_db_schema,o['OBJECT_TYPE'], tag_dict))
+        #threads_all.append(t)
         
-        thread_name = 'row_access_policy_'+object_name_with_db_schema
-        t = threading.Thread(target=_get_row_access_policies, name=thread_name, args=(self, semaphore, object_name_with_db_schema, row_access_policy_dict))
-        threads_all.append(t)
-
-        thread_name = 'columns_'+object_name_with_db_schema
-        t = threading.Thread(target=_get_columns, name=thread_name, args=(self, semaphore, object_name_with_db_schema, database_name, schema_name, o['OBJECT_NAME'], columns_dict))
-        threads_all.append(t)
+        # Row access policies for each table 
+        _get_row_access_policies(self, object_name_with_db_schema, row_access_policy_dict)
+        #thread_name = 'row_access_policy_'+object_name_with_db_schema
+        #t = threading.Thread(target=_get_row_access_policies, name=thread_name, args=(self, semaphore, object_name_with_db_schema, row_access_policy_dict))
+        #threads_all.append(t)
+        
+        # Columns
+        _get_columns(self, object_name_with_db_schema, database_name, schema_name, o['OBJECT_NAME'], columns_dict)
+        #thread_name = 'columns_'+object_name_with_db_schema
+        #t = threading.Thread(target=_get_columns, name=thread_name, args=(self, semaphore, object_name_with_db_schema, database_name, schema_name, o['OBJECT_NAME'], columns_dict))
+        #threads_all.append(t)
 
     # async management
-    for t in threads_all:
-        t.start()
+    #for t in threads_all:
+    #    t.start()
     #for t in threads_all:
     #    t.join()
 

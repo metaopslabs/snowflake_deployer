@@ -30,20 +30,20 @@ def wrangle_warehouse(self, env_warehouse_prefix:str, env_database_prefix:str, e
         warehouse_name = wh['WAREHOUSE_NAME']
 
         # async get all role grants
-        thread_name = 'grants_'+warehouse_name
+        thread_name = 'whgrants_'+warehouse_name
         t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, warehouse_name, grant_dict))
         threads_all.append(t)
 
         # async get all tag grants
-        thread_name = 'tags_'+warehouse_name
+        thread_name = 'whtags_'+warehouse_name
         t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, warehouse_name, tag_dict))
         threads_all.append(t)
 
     # async management
     for t in threads_all:
         t.start()
-    #for t in threads_all:
-    #    t.join()
+    for t in threads_all:
+        t.join()
 
     #while len(threading.enumerate()) > 1:
     #    sleep(1)

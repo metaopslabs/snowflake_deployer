@@ -413,7 +413,8 @@ def snowflake_import(args:dict):
         rs = []
         if not config['IMPORT_OBJECT_TYPES'] or 'ROLE' in config['IMPORT_OBJECT_TYPES']:
             rs = wrangler.wrangle_role(config['ENV_ROLE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
-            
+            #print('import role')
+            #print(rs)
         for r in rs:
             tnr = r['ROLE_NAME'] + ' [role]'
             t = threading.Thread(target=task_role, name=tnr, args=(semaphore, writer, sf, config, tnr, r, logger))
@@ -429,7 +430,7 @@ def snowflake_import(args:dict):
         whs = []
         if not config['IMPORT_OBJECT_TYPES'] or 'WAREHOUSE' in config['IMPORT_OBJECT_TYPES']:
             whs = wrangler.wrangle_warehouse(config['ENV_WAREHOUSE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
-        
+            #print('import wh')
         for wh in whs:
             tnw = wh['WAREHOUSE_NAME'] + ' [warehouse]'
             t = threading.Thread(target=task_warehouse, name=tnw, args=(semaphore, writer, sf, config, tnw, wh, logger))

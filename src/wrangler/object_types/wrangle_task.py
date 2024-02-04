@@ -2,16 +2,13 @@ from src.util.util import remove_prefix
 import threading
 from time import sleep
 
-def _get_grants(self_sf, semaphore, full_task_name:str, grant_dict:dict):
-    with semaphore:
-        grants_raw = self_sf._sf.grants_get(full_task_name, 'task')
-        grant_dict[full_task_name] = grants_raw
+def _get_grants(self_sf, full_task_name:str, grant_dict:dict):
+    grants_raw = self_sf._sf.grants_get(full_task_name, 'task')
+    grant_dict[full_task_name] = grants_raw
 
-def _get_tag_references(self_sf, semaphore, database_name:str, full_task_name:str, tag_dict:dict):
-    with semaphore:
-        
-        tags_raw = self_sf._sf.tag_references_get(database_name, full_task_name, 'task')
-        tag_dict[full_task_name] = tags_raw
+def _get_tag_references(self_sf, database_name:str, full_task_name:str, tag_dict:dict):
+    tags_raw = self_sf._sf.tag_references_get(database_name, full_task_name, 'task')
+    tag_dict[full_task_name] = tags_raw
 
 def wrangle_task(self, database_name:str, schema_name:str, env_database_prefix:str, env_role_prefix:str, deploy_db_name:str, ignore_roles_list:str, deploy_tag_list:list[str], current_role:str, available_roles:list[str], handle_ownership, semaphore)->dict:
     if env_database_prefix is None:
@@ -29,18 +26,20 @@ def wrangle_task(self, database_name:str, schema_name:str, env_database_prefix:s
         full_task_name = database_name + '.' + schema_name + '.' + d['TASK_NAME']
 
         # async get all role grants
-        thread_name = 'grants_'+full_task_name
-        t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, full_task_name, grant_dict))
-        threads_all.append(t)
+        _get_grants(self, full_task_name, grant_dict)
+        #thread_name = 'grants_'+full_task_name
+        #t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, full_task_name, grant_dict))
+        #threads_all.append(t)
 
         # async get all tag grants
-        thread_name = 'tags_'+full_task_name
-        t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, full_task_name, tag_dict))
-        threads_all.append(t)
+        _get_tag_references(self, database_name, full_task_name, tag_dict)
+        #thread_name = 'tags_'+full_task_name
+        #t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, full_task_name, tag_dict))
+        #threads_all.append(t)
 
     # async management
-    for t in threads_all:
-        t.start()
+    #for t in threads_all:
+    #    t.start()
     #for t in threads_all:
     #    t.join()
 

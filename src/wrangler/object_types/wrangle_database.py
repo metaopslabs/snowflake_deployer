@@ -6,12 +6,12 @@ def _get_grants(self_sf, semaphore, database_name:str, grant_dict:dict):
     with semaphore:
         grants_raw = self_sf._sf.grants_get(database_name, 'database')
         grant_dict[database_name] = grants_raw
-
+    
 def _get_tag_references(self_sf, semaphore, database_name:str, tag_dict:dict):
     with semaphore:
         tags_raw = self_sf._sf.tag_references_get(database_name, database_name, 'database')
         tag_dict[database_name] = tags_raw
-
+       
 def wrangle_database(self, env_database_prefix:str, env_role_prefix:str, excluded_databases:list[str], deploy_db_name:str, ignore_roles_list:str, deploy_tag_list:list[str], current_role:str, available_roles:list[str], handle_ownership, import_databases:list[str], semaphore)->dict:
     if env_database_prefix is None:
         env_database_prefix = ''
@@ -28,21 +28,28 @@ def wrangle_database(self, env_database_prefix:str, env_role_prefix:str, exclude
         db_name = db['DATABASE_NAME']
 
         # async get all role grants
-        thread_name = 'grants_'+db_name
+        thread_name = 'dbgrants_'+db_name
         t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, db_name, grant_dict))
         threads_all.append(t)
-
+        #print(thread_name)
         # async get all tag grants
-        thread_name = 'tags_'+db_name
+        thread_name = 'dbtags_'+db_name
         t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, db_name, tag_dict))
         threads_all.append(t)
+        #print(thread_name)
 
     # async management
     for t in threads_all:
         t.start()
-    #for t in threads_all:
-    #    t.join()
+    for t in threads_all:
+        t.join()
 
+    #while ( len(list(filter(lambda t: t.name.startswith('dbgrants_'), threading.enumerate()))) > 0
+    #       or len(list(filter(lambda t: t.name.startswith('dbtags_'), threading.enumerate()))) > 0 ):
+    #    sleep(1)
+    
+    #print(grant_dict)
+    #print(tag_dict)
     #while len(threading.enumerate()) > 1:
     #    sleep(1)
 
