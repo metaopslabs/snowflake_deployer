@@ -2,15 +2,13 @@ from src.util.util import remove_prefix
 import threading
 from time import sleep
 
-def _get_grants(self_sf, semaphore, proc_full_name:str, grant_dict:dict):
-    with semaphore:
-        grants_raw = self_sf._sf.grants_get(proc_full_name, 'procedure')
-        grant_dict[proc_full_name] = grants_raw
+def _get_grants(self_sf, proc_full_name:str, grant_dict:dict):
+    grants_raw = self_sf._sf.grants_get(proc_full_name, 'procedure')
+    grant_dict[proc_full_name] = grants_raw
 
-def _get_tag_references(self_sf, semaphore, database_name:str, proc_full_name:str, tag_dict:dict):
-    with semaphore:
-        tags_raw = self_sf._sf.tag_references_get(database_name, proc_full_name, 'procedure') 
-        tag_dict[proc_full_name] = tags_raw
+def _get_tag_references(self_sf, database_name:str, proc_full_name:str, tag_dict:dict):
+    tags_raw = self_sf._sf.tag_references_get(database_name, proc_full_name, 'procedure') 
+    tag_dict[proc_full_name] = tags_raw
 
 def wrangle_procedure(self, database_name:str, env_procedure_prefix:str, env_database_prefix:str, env_role_prefix:str, deploy_db_name:str, ignore_roles_list:str, deploy_tag_list:list[str], current_role:str, available_roles:list[str], handle_ownership, semaphore)->dict:
     if env_database_prefix is None:
@@ -31,18 +29,20 @@ def wrangle_procedure(self, database_name:str, env_procedure_prefix:str, env_dat
         proc_full_name = database_name + '.' + schema_name + '.' + p['ARGUMENT_SIGNATURE_TO_MATCH'].replace(' ','')
         
         # async get all role grants
-        thread_name = 'grants_'+proc_full_name
-        t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, proc_full_name, grant_dict))
-        threads_all.append(t)
+        _get_grants(self, proc_full_name, grant_dict)
+        #thread_name = 'grants_'+proc_full_name
+        #t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, proc_full_name, grant_dict))
+        #threads_all.append(t)
 
         # async get all tag grants
-        thread_name = 'tags_'+proc_full_name
-        t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, proc_full_name, tag_dict))
-        threads_all.append(t)
+        _get_tag_references(self, database_name, proc_full_name, tag_dict)
+        #thread_name = 'tags_'+proc_full_name
+        #t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, proc_full_name, tag_dict))
+        #threads_all.append(t)
 
     # async management
-    for t in threads_all:
-        t.start()
+    #for t in threads_all:
+    #    t.start()
     #for t in threads_all:
     #    t.join()
 

@@ -2,15 +2,13 @@ from src.util.util import remove_prefix
 import threading
 from time import sleep
 
-def _get_grants(self_sf, semaphore, full_schema_name:str, grant_dict:dict):
-    with semaphore:
-        grants_raw = self_sf._sf.grants_get(full_schema_name, 'schema')
-        grant_dict[full_schema_name] = grants_raw
+def _get_grants(self_sf, full_schema_name:str, grant_dict:dict):
+    grants_raw = self_sf._sf.grants_get(full_schema_name, 'schema')
+    grant_dict[full_schema_name] = grants_raw
 
-def _get_tag_references(self_sf, semaphore, database_name:str, full_schema_name:str, tag_dict:dict):
-    with semaphore:
-        tags_raw = self_sf._sf.tag_references_get(database_name, full_schema_name, 'schema')
-        tag_dict[full_schema_name] = tags_raw
+def _get_tag_references(self_sf, database_name:str, full_schema_name:str, tag_dict:dict):
+    tags_raw = self_sf._sf.tag_references_get(database_name, full_schema_name, 'schema')
+    tag_dict[full_schema_name] = tags_raw
 
 def wrangle_schema(self, database_name:str, env_database_prefix:str, env_role_prefix:str, deploy_db_name:str, ignore_roles_list:str, deploy_tag_list:list[str], current_role:str, available_roles:list[str], handle_ownership, semaphore)->dict:
     if env_database_prefix is None:
@@ -28,23 +26,29 @@ def wrangle_schema(self, database_name:str, env_database_prefix:str, env_role_pr
         full_schema_name = database_name + '.' + s['SCHEMA_NAME']
 
         # async get all role grants
-        thread_name = 'grants_'+full_schema_name
-        t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, full_schema_name, grant_dict))
-        threads_all.append(t)
+        _get_grants(self, full_schema_name, grant_dict)
+        #thread_name = 'schemagrants_'+full_schema_name
+        #t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, full_schema_name, grant_dict))
+        #threads_all.append(t)
 
         # async get all tag grants
-        thread_name = 'tags_'+full_schema_name
-        t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, full_schema_name, tag_dict))
-        threads_all.append(t)
+        _get_tag_references(self, database_name, full_schema_name, tag_dict)
+        #thread_name = 'schematags_'+full_schema_name
+        #t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, full_schema_name, tag_dict))
+        #threads_all.append(t)
 
     # async management
     for t in threads_all:
         t.start()
     #for t in threads_all:
     #    t.join()
+    while ( len(list(filter(lambda t: t.name.startswith('schemagrants_'), threading.enumerate()))) > 0
+           or len(list(filter(lambda t: t.name.startswith('schematags_'), threading.enumerate()))) > 0 ):
+        sleep(1)
 
     #while len(threading.enumerate()) > 1:
-    #    sleep(1)
+    #    print(threading.enumerate())
+    #    #sleep(1)
 
     data = []
     for s in schemas:

@@ -2,15 +2,13 @@ from src.util.util import remove_prefix
 import threading
 from time import sleep
 
-def _get_grants(self_sf, semaphore, full_policy_name:str, grant_dict:dict):
-    with semaphore:
-        grants_raw = self_sf._sf.grants_get(full_policy_name, 'row access policy')
-        grant_dict[full_policy_name] = grants_raw
+def _get_grants(self_sf, full_policy_name:str, grant_dict:dict):
+    grants_raw = self_sf._sf.grants_get(full_policy_name, 'row access policy')
+    grant_dict[full_policy_name] = grants_raw
 
-def _get_tag_references(self_sf, semaphore, database_name:str, full_policy_name:str, tag_dict:dict):
-    with semaphore:
-        tags_raw = self_sf._sf.tag_references_get(database_name, full_policy_name, 'row access policy') 
-        tag_dict[full_policy_name] = tags_raw
+def _get_tag_references(self_sf, database_name:str, full_policy_name:str, tag_dict:dict):
+    tags_raw = self_sf._sf.tag_references_get(database_name, full_policy_name, 'row access policy') 
+    tag_dict[full_policy_name] = tags_raw
 
 def wrangle_row_access_policy(self, database_name:str, schema_name:str, env_database_prefix:str, env_role_prefix:str, deploy_db_name:str, ignore_roles_list:str, deploy_tag_list:list[str], current_role:str, available_roles:list[str], handle_ownership, semaphore)->dict:
     if env_database_prefix is None:
@@ -28,18 +26,20 @@ def wrangle_row_access_policy(self, database_name:str, schema_name:str, env_data
         full_policy_name = database_name + '.' + schema_name + '.' + d['ROW_ACCESS_POLICY_NAME'].replace(' ','')
 
         # async get all role grants
-        thread_name = 'grants_'+full_policy_name
-        t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, full_policy_name, grant_dict))
-        threads_all.append(t)
+        _get_grants(self, full_policy_name, grant_dict)
+        #thread_name = 'grants_'+full_policy_name
+        #t = threading.Thread(target=_get_grants, name=thread_name, args=(self, semaphore, full_policy_name, grant_dict))
+        #threads_all.append(t)
 
         # async get all tag grants
-        thread_name = 'tags_'+full_policy_name
-        t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, full_policy_name, tag_dict))
-        threads_all.append(t)
+        _get_tag_references(self, database_name, full_policy_name, tag_dict)
+        #thread_name = 'tags_'+full_policy_name
+        #t = threading.Thread(target=_get_tag_references, name=thread_name, args=(self, semaphore, database_name, full_policy_name, tag_dict))
+        #threads_all.append(t)
 
     # async management
-    for t in threads_all:
-        t.start()
+    #for t in threads_all:
+    #    t.start()
     #for t in threads_all:
     #    t.join()
 

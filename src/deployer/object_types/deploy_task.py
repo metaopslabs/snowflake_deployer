@@ -12,8 +12,8 @@ def deploy_task(self, task_full_name:str, file_hash:str, file_hash_code:str, con
     ENABLED = config['ENABLED'] if 'ENABLED' in config else None
     CONDITION = config['CONDITION'] if 'CONDITION' in config else None
     USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE = config['USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE'] if 'USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE' in config else None
-    USER_TASK_TIMEOUT_MS = str(config['USER_TASK_TIMEOUT_MS']) if 'USER_TASK_TIMEOUT_MS' in config else None
-    SUSPEND_TASK_AFTER_NUM_FAILURES = str(config['SUSPEND_TASK_AFTER_NUM_FAILURES']) if 'SUSPEND_TASK_AFTER_NUM_FAILURES' in config else None
+    USER_TASK_TIMEOUT_MS = str(config['USER_TASK_TIMEOUT_MS']) if 'USER_TASK_TIMEOUT_MS' in config and config['USER_TASK_TIMEOUT_MS'] is not None and str(config['USER_TASK_TIMEOUT_MS']) != '' else None
+    SUSPEND_TASK_AFTER_NUM_FAILURES = str(config['SUSPEND_TASK_AFTER_NUM_FAILURES']) if 'SUSPEND_TASK_AFTER_NUM_FAILURES' in config and config['SUSPEND_TASK_AFTER_NUM_FAILURES'] is not None and str(config['SUSPEND_TASK_AFTER_NUM_FAILURES']) != '' else None
     
     TAGS = config['TAGS'] if 'TAGS' in config and config['TAGS'] != '' and config['TAGS'] is not None else []
     BODY = body_code
