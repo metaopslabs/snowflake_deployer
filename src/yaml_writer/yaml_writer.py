@@ -412,6 +412,8 @@ class yaml_writer:
             new_val = new_dict[new_key]
             new_list.append({new_key:new_val})
 
+        #if new_list is None or upper(new_list) == 'NULL':
+        #    new_list = []
         return new_list
         
 

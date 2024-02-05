@@ -1,4 +1,4 @@
-def deploy_role(self, role_name:str, file_hash:str, config:dict, object_state_dict:dict, db_hash_dict:dict)->str:
+def deploy_role(self, role_name:str, file_hash:str, config:dict, object_state_dict:dict, db_hash_dict:dict, db_role:dict)->str:
     # warehouse_name in format <WAREHOUSE_NAME>
     
     # Get vars from config
@@ -57,7 +57,10 @@ def deploy_role(self, role_name:str, file_hash:str, config:dict, object_state_di
             #sf_deploy_hash = self._sf.deploy_hash_get(self._deploy_db_name, role_name, 'role')
             
             if state_file_hash != file_hash or state_db_hash != db_hash:
-                self._sf.role_alter(role_name, OWNER, COMMENT, CHILD_ROLES, TAGS)
+                tags_to_remove = list(filter(lambda x: x not in TAGS, db_role[role_name]['TAGS_SANS_JINJA']))
+                grants_to_remove = list(filter(lambda x: x not in GRANTS, db_role[role_name]['GRANTS_SANS_JINJA']))
+                
+                self._sf.role_alter(role_name, OWNER, COMMENT, CHILD_ROLES, TAGS, tags_to_remove, grants_to_remove)
                 db_hash_new = self._hasher.hash_role(OWNER, COMMENT, CHILD_ROLES, TAGS)
                 self._sf.deploy_hash_apply(role_name, 'ROLE', file_hash, '', db_hash_new, self._deploy_env, self._deploy_db_name)
 

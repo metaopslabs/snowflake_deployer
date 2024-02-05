@@ -1,4 +1,4 @@
-def deploy_task(self, task_full_name:str, file_hash:str, file_hash_code:str, config:dict, body_code:str, object_state_dict:dict, db_hash_dict:dict)->str:
+def deploy_task(self, task_full_name:str, file_hash:str, file_hash_code:str, config:dict, body_code:str, object_state_dict:dict, db_hash_dict:dict, db_schema:dict)->str:
     # task_full_name = <db>.<schema>.<name>
    
     # Get vars from config
@@ -73,7 +73,10 @@ def deploy_task(self, task_full_name:str, file_hash:str, file_hash_code:str, con
             #sf_deploy_code_hash = self._sf.deploy_code_hash_get(self._deploy_db_name, task_full_name, 'task')
             
             if state_file_hash != file_hash or state_file_hash_code != file_hash_code or state_db_hash != db_hash:
-                self._sf.task_alter(task_full_name, WAREHOUSE, SCHEDULE, ALLOW_OVERLAPPING_EXECUTION, ERROR_INTEGRATION, PREDECESSORS, COMMENT, ENABLED, CONDITION, USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE, USER_TASK_TIMEOUT_MS, SUSPEND_TASK_AFTER_NUM_FAILURES, BODY, OWNER, TAGS, GRANTS, self._deploy_role)
+                tags_to_remove = list(filter(lambda x: x not in TAGS, db_task[task_full_name]['TAGS_SANS_JINJA']))
+                grants_to_remove = list(filter(lambda x: x not in GRANTS, db_task[task_full_name]['GRANTS_SANS_JINJA']))
+                
+                self._sf.task_alter(task_full_name, WAREHOUSE, SCHEDULE, ALLOW_OVERLAPPING_EXECUTION, ERROR_INTEGRATION, PREDECESSORS, COMMENT, ENABLED, CONDITION, USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE, USER_TASK_TIMEOUT_MS, SUSPEND_TASK_AFTER_NUM_FAILURES, BODY, OWNER, TAGS, GRANTS, self._deploy_role, tags_to_remove, grants_to_remove)
                 db_hash_new = self._hasher.hash_task(WAREHOUSE, SCHEDULE, ALLOW_OVERLAPPING_EXECUTION, ERROR_INTEGRATION, PREDECESSORS, OWNER, ENABLED, CONDITION, USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE, USER_TASK_TIMEOUT_MS, SUSPEND_TASK_AFTER_NUM_FAILURES, TAGS, BODY, GRANTS)
                 self._sf.deploy_hash_apply(task_full_name, 'TASK', file_hash, file_hash_code, db_hash_new, self._deploy_env, self._deploy_db_name)
                 

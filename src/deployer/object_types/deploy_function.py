@@ -1,4 +1,4 @@
-def deploy_function(self, function_name_with_signature:str, file_hash:str, file_hash_code:str, config:dict, body_code:str, object_state_dict:dict, db_hash_dict:dict)->str:
+def deploy_function(self, function_name_with_signature:str, file_hash:str, file_hash_code:str, config:dict, body_code:str, object_state_dict:dict, db_hash_dict:dict, db_function:dict)->str:
     # function_name_with_signature = <db>.<schema>.<name>__<signature>
     
     # Object name in deployer wrapper includes the signature (ie. (varchar,int) ) as 
@@ -119,6 +119,9 @@ def deploy_function(self, function_name_with_signature:str, file_hash:str, file_
             #if sf_deploy_hash != file_hash or sf_deploy_code_hash != file_hash_code:
             #if func_details['RETURNS']!=RETURNS or func_details['COMMENT']!= COMMENT or func_details['BODY']!= BODY or func_details['OWNER']!= OWNER or func_details['TAGS']!= TAGS or func_details['GRANTS']!= GRANTS or ('IMPORTS' in func_details and func_details['IMPORTS']!= IMPORTS) or ('HANDLER' in func_details and func_details['HANDLER']!= IMPORTS) or ('RUNTIME_VERSION' in func_details and func_details['RUNTIME_VERSION']!= IMPORTS) or ('PACKAGES' in func_details and func_details['PACKAGES']!= IMPORTS):
             if state_file_hash != file_hash or state_file_hash_code != file_hash_code or state_db_hash != db_hash:
+                #tags_to_remove = list(filter(lambda x: x not in TAGS, db_function[function_key]['TAGS_SANS_JINJA']))
+                #grants_to_remove = list(filter(lambda x: x not in GRANTS, db_function[function_key]['GRANTS_SANS_JINJA']))
+                
                 self._sf.function_create(function_name, sql_function_name, IS_SECURE, INPUT_ARGS, RETURNS, LANGUAGE, COMMENT, BODY, IMPORTS, HANDLER, RUNTIME_VERSION, PACKAGES, OWNER, TAGS, GRANTS, self._deploy_role)
                 db_hash_new = self._hasher.hash_function(INPUT_ARGS, IS_SECURE, RETURNS, LANGUAGE, OWNER, COMMENT, TAGS, BODY, GRANTS, IMPORTS, HANDLER, RUNTIME_VERSION, PACKAGES)
                 self._sf.deploy_hash_apply(function_key, 'FUNCTION', file_hash, file_hash_code, db_hash_new, self._deploy_env, self._deploy_db_name)

@@ -37,7 +37,7 @@ def write_object_file(self,database_name:str, schema_name:str, d: dict, object_m
             data['TAGS'] = self.choose_list_objects_file_trumps(d['TAGS'], data['TAGS'])
         else:
             data['TAGS'] = d['TAGS']
-    elif ('TAGS' in data and data['TAGS'] != []):
+    elif ('TAGS' in data and data['TAGS'] != [] and data['TAGS'] is not None):
         data['TAGS'] = data['TAGS']
     else:
         data['TAGS']=var.EMPTY_STRING
@@ -47,7 +47,7 @@ def write_object_file(self,database_name:str, schema_name:str, d: dict, object_m
             data['GRANTS'] = self.choose_list_objects(d['GRANTS'], data['GRANTS'])
         else:
             data['GRANTS'] = d['GRANTS']
-    elif ('GRANTS' in data and data['GRANTS'] != []):
+    elif ('GRANTS' in data and data['GRANTS'] != [] and data['GRANTS'] is not None):
         data['GRANTS'] = data['GRANTS']
     else:
         data['GRANTS']=var.EMPTY_STRING

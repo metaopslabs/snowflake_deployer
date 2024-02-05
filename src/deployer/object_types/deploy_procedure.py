@@ -1,4 +1,4 @@
-def deploy_procedure(self, procedure_name_with_signature:str, file_hash:str, file_hash_code:str, config:dict, body_code:str, object_state_dict:dict, db_hash_dict:dict)->str:
+def deploy_procedure(self, procedure_name_with_signature:str, file_hash:str, file_hash_code:str, config:dict, body_code:str, object_state_dict:dict, db_hash_dict:dict, db_procedure:dict)->str:
     # procedure_name_with_signature = <db>.<schema>.<name>__<signature>
     
     # Object name in deployer wrapper includes the signature (ie. (varchar,int) ) as 
@@ -120,6 +120,9 @@ def deploy_procedure(self, procedure_name_with_signature:str, file_hash:str, fil
             
             #if sf_deploy_hash != file_hash or sf_deploy_code_hash != file_hash_code:
             if state_file_hash != file_hash or state_file_hash_code != file_hash_code or state_db_hash != db_hash:
+                #tags_to_remove = list(filter(lambda x: x not in TAGS, db_procedure[procedure_key]['TAGS_SANS_JINJA']))
+                #grants_to_remove = list(filter(lambda x: x not in GRANTS, db_procedure[procedure_key]['GRANTS_SANS_JINJA']))
+                
                 self._sf.procedure_create(procedure_name, sql_procedure_name, IS_SECURE, INPUT_ARGS, RETURNS, LANGUAGE, NULL_HANDLING, EXECUTE_AS, COMMENT, BODY, IMPORTS, HANDLER, RUNTIME_VERSION, PACKAGES, OWNER, TAGS, GRANTS, self._deploy_role)
                 db_hash_new = self._hasher.hash_procedure(INPUT_ARGS, IS_SECURE, RETURNS, LANGUAGE, NULL_HANDLING, EXECUTE_AS, OWNER, COMMENT, TAGS, BODY, GRANTS, IMPORTS, HANDLER, RUNTIME_VERSION, PACKAGES)
                 self._sf.deploy_hash_apply(procedure_key, 'PROCEDURE', file_hash, file_hash_code, db_hash_new, self._deploy_env, self._deploy_db_name)

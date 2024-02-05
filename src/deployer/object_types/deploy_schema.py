@@ -1,4 +1,4 @@
-def deploy_schema(self, schema_name:str, file_hash:str, config:dict, object_state_dict:dict, db_hash_dict:dict)->str:
+def deploy_schema(self, schema_name:str, file_hash:str, config:dict, object_state_dict:dict, db_hash_dict:dict, db_schema:dict)->str:
     # schema_name in format <DATABASE_NAME>.<SCHEMA_NAME>
     
     # Get vars from config
@@ -61,7 +61,10 @@ def deploy_schema(self, schema_name:str, file_hash:str, config:dict, object_stat
             #sf_deploy_hash = self._sf.deploy_hash_get(self._deploy_db_name, schema_name, 'schema')
             
             if state_file_hash != file_hash or state_db_hash != db_hash:
-                self._sf.schema_alter(schema_name, DATA_RETENTION_TIME_IN_DAYS, COMMENT, OWNER, TAGS, GRANTS)
+                tags_to_remove = list(filter(lambda x: x not in TAGS, db_schema[schema_name]['TAGS_SANS_JINJA']))
+                grants_to_remove = list(filter(lambda x: x not in GRANTS, db_schema[schema_name]['GRANTS_SANS_JINJA']))
+                
+                self._sf.schema_alter(schema_name, DATA_RETENTION_TIME_IN_DAYS, COMMENT, OWNER, TAGS, GRANTS, tags_to_remove, grants_to_remove)
                 db_hash_new = self._hasher.hash_schema(DATA_RETENTION_TIME_IN_DAYS, OWNER, COMMENT, TAGS, GRANTS)
                 self._sf.deploy_hash_apply(schema_name, 'SCHEMA', file_hash, '', db_hash_new, self._deploy_env, self._deploy_db_name)
                 

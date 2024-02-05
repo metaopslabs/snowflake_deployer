@@ -1,4 +1,4 @@
-def role_alter(self,role_name, owner:str, comment:str, child_roles:list, tags:list):
+def role_alter(self,role_name, owner:str, comment:str, child_roles:list, tags:list, tags_to_remove:list, grants_to_remove:list):
     cur = self._conn.cursor()
     query = ''
     try:
@@ -28,6 +28,20 @@ def role_alter(self,role_name, owner:str, comment:str, child_roles:list, tags:li
                 GRANT OWNERSHIP ON ROLE identifier(%s) TO ROLE identifier(%s) COPY CURRENT GRANTS;
             '''
             cur.execute(query,(role_name, owner))
+        
+        if tags_to_remove is not None:
+            for tag in tags_to_remove:
+                for tag_name in tag.keys():
+                    query = 'ALTER ROLE identifier(%s) UNSET TAG identifier(%s);'
+                    params = (role_name,tag_name)
+                    cur.execute(query,params)
+
+        if grants_to_remove is not None:
+            for grant in grants_to_remove:
+                for child_role in grant.keys():
+                    #permission = grant[child_role]
+                    query = "REVOKE role " + child_role + " FROM ROLE " + role_name + ";"
+                    cur.execute(query)
 
     except Exception as ex:
         msg = 'SQL Error:\n\nQuery: ' + query + '\n\nError Message:\n' + str(ex) + '\n\n'
