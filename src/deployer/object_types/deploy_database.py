@@ -1,4 +1,4 @@
-def deploy_database(self, database_name:str, file_hash:str, config, object_state_dict:dict, db_hash_dict:dict)->str:
+def deploy_database(self, database_name:str, file_hash:str, config, object_state_dict:dict, db_hash_dict:dict, db_database:dict)->str:
     
     # Get vars from config
     DATA_RETENTION_TIME_IN_DAYS = int(config['DATA_RETENTION_TIME_IN_DAYS']) if 'DATA_RETENTION_TIME_IN_DAYS' in config else None 
@@ -53,7 +53,11 @@ def deploy_database(self, database_name:str, file_hash:str, config, object_state
             #sf_deploy_hash = self._sf.deploy_hash_get(self._deploy_db_name, database_name, 'database')
             
             if state_file_hash != file_hash or state_db_hash != db_hash:
-                self._sf.database_alter(database_name, DATA_RETENTION_TIME_IN_DAYS, COMMENT, OWNER, TAGS, GRANTS)
+
+                tags_to_remove = list(filter(lambda x: x not in TAGS, db_database[database_name]['TAGS_SANS_JINJA']))
+                grants_to_remove = list(filter(lambda x: x not in GRANTS, db_database[database_name]['GRANTS_SANS_JINJA']))
+                
+                self._sf.database_alter(database_name, DATA_RETENTION_TIME_IN_DAYS, COMMENT, OWNER, TAGS, GRANTS, tags_to_remove, grants_to_remove)
                 db_hash_new = self._hasher.hash_database(DATA_RETENTION_TIME_IN_DAYS, OWNER, COMMENT, TAGS, GRANTS)
                 self._sf.deploy_hash_apply(database_name, 'DATABASE', file_hash, '', db_hash_new, self._deploy_env, self._deploy_db_name)
 

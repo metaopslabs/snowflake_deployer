@@ -1,6 +1,6 @@
 from snowflake.connector import DictCursor
 import json
-def task_alter(self,task_full_name:str, WAREHOUSE:str, SCHEDULE:str, ALLOW_OVERLAPPING_EXECUTION:bool, ERROR_INTEGRATION:str, PREDECESSORS:list, COMMENT:str, ENABLED:bool, CONDITION:str, USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE:str, USER_TASK_TIMEOUT_MS:str, SUSPEND_TASK_AFTER_NUM_FAILURES:str, BODY:str, OWNER:str, TAGS:list, GRANTS:list, deploy_role:str):
+def task_alter(self,task_full_name:str, WAREHOUSE:str, SCHEDULE:str, ALLOW_OVERLAPPING_EXECUTION:bool, ERROR_INTEGRATION:str, PREDECESSORS:list, COMMENT:str, ENABLED:bool, CONDITION:str, USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE:str, USER_TASK_TIMEOUT_MS:str, SUSPEND_TASK_AFTER_NUM_FAILURES:str, BODY:str, OWNER:str, TAGS:list, GRANTS:list, deploy_role:str, tags_to_remove:list, grants_to_remove:list):
     # task_name = <db>.<schema>.<task_name>
     cur = self._conn.cursor(DictCursor)
     query = ''
@@ -196,7 +196,21 @@ def task_alter(self,task_full_name:str, WAREHOUSE:str, SCHEDULE:str, ALLOW_OVERL
                     cur.execute(query,(task_full_name))
                 else:
                     raise Exception('Invalid grants for task: ' + task_full_name)
-            
+        
+        if tags_to_remove is not None:
+            for tag in tags_to_remove:
+                for tag_name in tag.keys():
+                    query = 'ALTER TASK identifier(%s) UNSET TAG identifier(%s);'
+                    params = (task_full_name,tag_name)
+                    cur.execute(query,params)
+        
+        if grants_to_remove is not None:
+            for grant in grants_to_remove:
+                for role_name in grant.keys():
+                    permission = grant[role_name]
+                    query = "REVOKE " + permission + " ON TASK identifier(%s) FROM ROLE " + role_name + ";"
+                    cur.execute(query,(task_full_name))
+
     except Exception as ex:
         msg = 'SQL Error:\n\nQuery: ' + query + '\n\nError Message:\n' + str(ex) + '\n\n'
         raise Exception(msg)

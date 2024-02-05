@@ -1,4 +1,4 @@
-def object_alter(self,full_object_name:str, data_retention_time_in_days:int, comment:str, owner:str, change_tracking:bool, row_access_policy:dict, tags:list, grants:list):
+def object_alter(self,full_object_name:str, data_retention_time_in_days:int, comment:str, owner:str, change_tracking:bool, row_access_policy:dict, tags:list, grants:list, tags_to_remove:list, grants_to_remove:list):
     cur = self._conn.cursor()
     query = ''
     try:
@@ -70,7 +70,23 @@ def object_alter(self,full_object_name:str, data_retention_time_in_days:int, com
                     cur.execute(query,(full_object_name))
                 else:
                     raise Exception('Invalid grants for object: ' + full_object_name)
-            
+        
+        if tags_to_remove is not None:
+            for tag in tags_to_remove:
+                #print('%%%')
+                #print(tag)
+                for tag_name in tag.keys():
+                    query = 'ALTER TABLE identifier(%s) UNSET TAG identifier(%s);'
+                    params = (full_object_name,tag_name)
+                    cur.execute(query,params)
+
+        if grants_to_remove is not None:
+            for grant in grants_to_remove:
+                for role_name in grant.keys():
+                    permission = grant[role_name]
+                    query = "REVOKE " + permission + " ON TABLE identifier(%s) FROM ROLE " + role_name + ";"
+                    cur.execute(query,(full_object_name))
+
     except Exception as ex:
         msg = 'SQL Error:\n\nQuery: ' + query + '\n\nError Message:\n' + str(ex) + '\n\n'
         raise Exception(msg)

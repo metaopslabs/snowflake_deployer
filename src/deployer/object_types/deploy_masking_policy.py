@@ -1,4 +1,4 @@
-def deploy_masking_policy(self, policy_full_name:str, file_hash:str, file_hash_code:str, config:dict, body_code:str, object_state_dict:dict, db_hash_dict:dict)->str:
+def deploy_masking_policy(self, policy_full_name:str, file_hash:str, file_hash_code:str, config:dict, body_code:str, object_state_dict:dict, db_hash_dict:dict, db_masking_policy:dict)->str:
     # policy_full_name = <db>.<schema>.<name>
     #SIGNATURE:list, RETURN_TYPE:str, EXEMPT_OTHER_POLICIES:bool, OWNER:str, COMMENT:str, BODY:str, TAGS:list, GRANTS:list, DEPLOY_ROLE:str
     #SIGNATURE, RETURN_TYPE, EXEMPT_OTHER_POLICIES, OWNER, COMMENT, BODY, TAGS, GRANTS, DEPLOY_ROLE
@@ -63,7 +63,10 @@ def deploy_masking_policy(self, policy_full_name:str, file_hash:str, file_hash_c
             #sf_deploy_code_hash = self._sf.deploy_code_hash_get(self._deploy_db_name, policy_full_name, 'masking policy')
             
             if state_file_hash != file_hash or state_file_hash_code != file_hash_code or state_db_hash != db_hash:
-                self._sf.masking_policy_alter(policy_full_name, SIGNATURE, RETURN_TYPE, EXEMPT_OTHER_POLICIES, OWNER, COMMENT, BODY, TAGS, GRANTS, self._deploy_role)
+                tags_to_remove = list(filter(lambda x: x not in TAGS, db_masking_policy[policy_full_name]['TAGS_SANS_JINJA']))
+                grants_to_remove = list(filter(lambda x: x not in GRANTS, db_masking_policy[policy_full_name]['GRANTS_SANS_JINJA']))
+                
+                self._sf.masking_policy_alter(policy_full_name, SIGNATURE, RETURN_TYPE, EXEMPT_OTHER_POLICIES, OWNER, COMMENT, BODY, TAGS, GRANTS, self._deploy_role, tags_to_remove, grants_to_remove)
                 db_hash_new = self._hasher.hash_masking_policy(SIGNATURE, RETURN_TYPE, EXEMPT_OTHER_POLICIES, OWNER, COMMENT, TAGS, BODY, GRANTS)
                 self._sf.deploy_hash_apply(policy_full_name, 'MASKING_POLICY', file_hash, file_hash_code, db_hash_new, self._deploy_env, self._deploy_db_name)
                 

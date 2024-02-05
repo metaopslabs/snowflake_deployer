@@ -1,4 +1,4 @@
-def masking_policy_alter(self,policy_full_name:str, SIGNATURE:list, RETURN_TYPE:str, EXEMPT_OTHER_POLICIES:bool, OWNER:str, COMMENT:str, BODY:str, TAGS:list, GRANTS:list, DEPLOY_ROLE:str):
+def masking_policy_alter(self,policy_full_name:str, SIGNATURE:list, RETURN_TYPE:str, EXEMPT_OTHER_POLICIES:bool, OWNER:str, COMMENT:str, BODY:str, TAGS:list, GRANTS:list, DEPLOY_ROLE:str, tags_to_remove:list, grants_to_remove:list):
     # task_name = <db>.<schema>.<task_name>
     cur = self._conn.cursor()
     query = ''
@@ -39,7 +39,21 @@ def masking_policy_alter(self,policy_full_name:str, SIGNATURE:list, RETURN_TYPE:
                     cur.execute(query)
                 else:
                     raise Exception('Invalid grants for masking policy: ' + policy_full_name)
-            
+        
+        if tags_to_remove is not None:
+            for tag in tags_to_remove:
+                for tag_name in tag.keys():
+                    query = 'ALTER MASKING POLICY identifier(%s) UNSET TAG identifier(%s);'
+                    params = (policy_full_name,tag_name)
+                    cur.execute(query,params)
+
+        if grants_to_remove is not None:
+            for grant in grants_to_remove:
+                for role_name in grant.keys():
+                    permission = grant[role_name]
+                    query = "REVOKE " + permission + " ON MASKING POLICY identifier(%s) FROM ROLE " + role_name + ";"
+                    cur.execute(query,(policy_full_name))
+
     except Exception as ex:
         msg = 'SQL Error:\n\nQuery: ' + query + '\n\nError Message:\n' + str(ex) + '\n\n'
         raise Exception(msg)

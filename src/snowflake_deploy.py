@@ -186,38 +186,38 @@ def task(semaphore, tn:str, ref_id:str, data:dict, completed:list, processing:li
                     # Deploy
                     if object_type == 'database':
                         val.validate_database(config_raw)
-                        return_status = deploy.deploy_database(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['database'])
+                        return_status = deploy.deploy_database(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['database'], db_hash_dict['db_database'])
                     elif object_type == 'schema':
                         val.validate_schema(config_raw)
-                        return_status = deploy.deploy_schema(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['schema'])
+                        return_status = deploy.deploy_schema(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['schema'], db_hash_dict['db_schema'])
                     elif object_type == 'tag':
                         val.validate_tag(config_raw)
                         return_status = deploy.deploy_tag(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['tag'])
                     elif object_type == 'object':
                         val.validate_object(config_raw)
-                        return_status = deploy.deploy_object(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['object'])
+                        return_status = deploy.deploy_object(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['object'], db_hash_dict['db_object'])
                     elif object_type == 'warehouse':
                         val.validate_warehouse(config_raw)
-                        return_status = deploy.deploy_warehouse(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['warehouse'])
+                        return_status = deploy.deploy_warehouse(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['warehouse'], db_hash_dict['db_warehouse'])
                     elif object_type == 'role':
                         val.validate_role(config_raw)
-                        return_status = deploy.deploy_role(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['role'])
+                        return_status = deploy.deploy_role(object_name, file_hash, config_raw, object_state_dict, db_hash_dict['role'], db_hash_dict['db_role'])
                     elif object_type == 'procedure':
                         val.validate_procedure(config_raw)
-                        return_status = deploy.deploy_procedure(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['procedure'])
+                        return_status = deploy.deploy_procedure(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['procedure'], db_hash_dict['db_procedure'])
                     elif object_type == 'function':
                         val.validate_function(config_raw)
-                        return_status = deploy.deploy_function(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['function'])
+                        return_status = deploy.deploy_function(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['function'], db_hash_dict['db_function'])
                     elif object_type == 'task':
                         val.validate_task(config_raw)
-                        return_status = deploy.deploy_task(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['task'])
+                        return_status = deploy.deploy_task(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['task'], db_hash_dict['db_task'])
                     elif object_type == 'masking_policy':
                         val.validate_masking_policy(config_raw)
-                        return_status = deploy.deploy_masking_policy(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['masking_policy'])
+                        return_status = deploy.deploy_masking_policy(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['masking_policy'], db_hash_dict['db_masking_policy'])
                         #dummy = True
                     elif object_type == 'row_access_policy':
                         val.validate_row_access_policy(config_raw)
-                        return_status = deploy.deploy_row_access_policy(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['row_access_policy'])
+                        return_status = deploy.deploy_row_access_policy(object_name, file_hash, file_hash_code, config_raw, body_code, object_state_dict, db_hash_dict['row_access_policy'], db_hash_dict['db_row_access_policy'])
                         #dummy = True
                     else:
                         raise object_type_not_supported(object_type)
@@ -641,17 +641,32 @@ def snowflake_deploy(args:dict):
             logger.log('','Getting current Snowflake WAREHOUSES to calculate diffs from config')
             whs = wrangle.wrangle_warehouse(config['ENV_WAREHOUSE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
             db_hash_dict['warehouse'] = hsh.hash_warehouse_all(whs)
-        
+
+            db_warehouse = {}
+            for wh in whs:
+                db_warehouse[wh['WAREHOUSE_NAME']] = wh
+            db_hash_dict['db_warehouse'] = db_warehouse
+            
         if 'role' in map_object_types:  
             logger.log('','Getting current Snowflake ROLES to calculate diffs from config')
             rs = wrangle.wrangle_role(config['ENV_ROLE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
             db_hash_dict['role'] = hsh.hash_role_all(rs)
 
+            db_role = {}
+            for r in rs:
+                db_role[r['ROLE_NAME']] = r
+            db_hash_dict['db_role'] = db_role
+            
         if 'database' in map_object_types:  
             logger.log('','Getting current Snowflake DATABASES to calculate diffs from config')
             dbs = wrangle.wrangle_database(config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], excluded_databases, config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'], import_databases,semaphore)
             db_hash_dict['database'] = hsh.hash_database_all(dbs)
-        
+
+            db_database = {}
+            for db in dbs:
+                db_database[db['DATABASE_NAME']] = db
+            db_hash_dict['db_database'] = db_database
+            
         if 'schema' in map_object_types:  
             logger.log('','Getting current Snowflake SCHEMAS to calculate diffs from config')
             for db in dbs:
@@ -659,6 +674,11 @@ def snowflake_deploy(args:dict):
                 schemas = schemas + schemas_new
             db_hash_dict['schema'] = hsh.hash_schema_all(schemas)
 
+            db_schema = {}
+            for s in schemas:
+                db_schema[s['FULL_SCHEMA_NAME']] = s
+            db_hash_dict['db_schema'] = db_schema
+            
         if 'tag' in map_object_types:  
             logger.log('','Getting current Snowflake TAGS to calculate diffs from config')
             for schema in schemas:
@@ -666,23 +686,34 @@ def snowflake_deploy(args:dict):
                 tags = tags + tags_new
             db_hash_dict['tag'] = hsh.hash_tag_all(tags)
 
+            db_tag = {}
+            for t in tags:
+                db_tag[t['FULL_TAG_NAME']] = t
+            db_hash_dict['db_tag'] = db_tag
+            
         if 'object' in map_object_types:  
             logger.log('','Getting current Snowflake OBJECTS to calculate diffs from config')
             for schema in schemas:
                 objects_new = wrangle.wrangle_object(schema['DATABASE_NAME'], schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
                 objects = objects + objects_new
             db_hash_dict['object'] = hsh.hash_object_all(objects)
-            #print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
-            #print(db_hash_dict['object'])
-            #print('~~~~~')
-            #print(objects)
-            #print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+
+            db_object = {}
+            for obj in objects:
+                db_object[obj['FULL_OBJECT_NAME']] = obj
+            db_hash_dict['db_object'] = db_object
+            
         if 'procedure' in map_object_types:  
             logger.log('','Getting current Snowflake PROCEDURES to calculate diffs from config')
             for db in dbs:
                 procedure_new = wrangle.wrangle_procedure(db['DATABASE_NAME'], config['ENV_PROCEDURE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
                 procedures = procedures + procedure_new
             db_hash_dict['procedure'] = hsh.hash_procedure_all(procedures)
+
+            db_procedure = {}
+            for p in procedures:
+                db_procedure[p['PROC_FULL_NAME']] = p
+            db_hash_dict['db_procedure'] = db_procedure
 
         if 'function' in map_object_types:  
             logger.log('','Getting current Snowflake FUNCTIONS to calculate diffs from config')
@@ -691,12 +722,22 @@ def snowflake_deploy(args:dict):
                 functions = functions + function_new
             db_hash_dict['function'] = hsh.hash_function_all(functions)
 
+            db_function = {}
+            for f in functions:
+                db_function[f['FULL_FUNCTION_NAME']] = f
+            db_hash_dict['db_function'] = db_function
+
         if 'task' in map_object_types:  
             logger.log('','Getting current Snowflake TASKS to calculate diffs from config')
             for schema in schemas:
                 task_new = wrangle.wrangle_task(schema['DATABASE_NAME'], schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
                 tasks = tasks + task_new
             db_hash_dict['task'] = hsh.hash_task_all(tasks)
+
+            db_task = {}
+            for t in tasks:
+                db_task[t['FULL_TASK_NAME']] = t
+            db_hash_dict['db_task'] = db_task
 
         if 'masking_policy' in map_object_types:  
             logger.log('','Getting current Snowflake MASKING POLICIES to calculate diffs from config')
@@ -705,6 +746,11 @@ def snowflake_deploy(args:dict):
                 masking_policies = masking_policies + masking_policy_new
             db_hash_dict['masking_policy'] = hsh.hash_masking_policy_all(masking_policies)
 
+            db_masking_policy = {}
+            for mp in masking_policies:
+                db_masking_policy[mp['FULL_POLICY_NAME']] = mp
+            db_hash_dict['db_masking_policy'] = db_masking_policy
+
         if 'row_access_policy' in map_object_types:  
             logger.log('','Getting current Snowflake ROW ACCESS POLICIES to calculate diffs from config')
             for schema in schemas:
@@ -712,59 +758,10 @@ def snowflake_deploy(args:dict):
                 row_access_policies = row_access_policies + row_access_policy_new
             db_hash_dict['row_access_policy'] = hsh.hash_row_access_policy_all(row_access_policies)
         
-
-        #for obj in map_object_types:
-        #    object_type = obj['object_type']
-            #if object_type == 'database':
-            #    logger.log('','Getting current Snowflake DATABASES to calculate diffs from config')
-            #    dbs = wrangle.wrangle_database(config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], excluded_databases, config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'], import_databases,semaphore)
-            #    db_hash_dict['database'] = hsh.hash_database_all(dbs)
-            
-            #elif object_type == 'schema':
-            #    logger.log('','Getting current Snowflake SCHEMAS to calculate diffs from config')
-            #    #print('------------------')
-            #    #print(dbs)
-            #    #print('------------------')
-            #    for db in dbs:
-            #        schemas_new = wrangle.wrangle_schema(db['DATABASE_NAME'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
-            #        schemas = schemas + schemas_new
-            #    db_hash_dict['schema'] = hsh.hash_schema_all(schemas)
-            #    #print('+++++++++++++++++++')
-            #    #print(db_hash_dict['schema'])
-            #    #print('+++++++++++++++++++')
-            #elif object_type == 'tag':
-            #    logger.log('','Getting current Snowflake TAGS to calculate diffs from config')
-            #    for schema in schemas:
-            #        tags_new = wrangle.wrangle_tag(schema['DATABASE_NAME'], schema['SCHEMA_NAME'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
-            #        tags = tags + tags_new
-            #    db_hash_dict['tag'] = hsh.hash_tag_all(tags)
-            #
-            #elif object_type == 'object':
-                
-            #elif object_type == 'warehouse':
-            #    logger.log('','Getting current Snowflake WAREHOUSES to calculate diffs from config')
-            #    whs = wrangle.wrangle_warehouse(config['ENV_WAREHOUSE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['ENV_ROLE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
-            #    db_hash_dict['warehouse'] = hsh.hash_warehouse_all(whs)
-                
-            #elif object_type == 'role':
-            #    logger.log('','Getting current Snowflake ROLES to calculate diffs from config')
-            #    rs = wrangle.wrangle_role(config['ENV_ROLE_PREFIX'], config['ENV_DATABASE_PREFIX'], config['DEPLOY_DATABASE_NAME'], ignore_roles_list, config['DEPLOY_TAGS'],config['DEPLOY_ROLE'], available_roles, config['HANDLE_OWNERSHIP'],semaphore)
-            #    db_hash_dict['role'] = hsh.hash_role_all(rs)
-                
-            #elif object_type == 'procedure':
-                
-            #elif object_type == 'function':
-                
-            #elif object_type == 'task':
-                
-            #elif object_type == 'masking_policy':
-                
-            #elif object_type == 'row_access_policy':
-                
-            #else:
-            #    raise object_type_not_supported(object_type)
-
-        
+            db_row_access_policy = {}
+            for rap in row_access_policies:
+                db_row_access_policy[rap['FULL_POLICY_NAME']] = rap
+            db_hash_dict['db_row_access_policy'] = db_row_access_policy
 
         completed = []  # need to track the objects already processed to know when downstream (next) processes can begin based on all dependencies being "complete"
         processing = []  # need to track currently executing processes for race conditions when a process kicks off (from a next of another object) that is already processing to avoid duplicate execution

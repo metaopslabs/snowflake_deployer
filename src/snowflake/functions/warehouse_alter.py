@@ -1,4 +1,4 @@
-def warehouse_alter(self,warehouse_name, warehouse_type:str, warehouse_size:str, min_cluster_count:int, max_cluster_count:int, scaling_policy:str, auto_suspend:int, auto_resume:bool, owner:str, comment:str, enable_query_acceleration:bool, query_acceleration_max_scale_factor:int, tags:list, grants:list):
+def warehouse_alter(self,warehouse_name, warehouse_type:str, warehouse_size:str, min_cluster_count:int, max_cluster_count:int, scaling_policy:str, auto_suspend:int, auto_resume:bool, owner:str, comment:str, enable_query_acceleration:bool, query_acceleration_max_scale_factor:int, tags:list, grants:list, tags_to_remove:list, grants_to_remove:list):
     cur = self._conn.cursor()
     query = ''
     try:
@@ -67,7 +67,21 @@ def warehouse_alter(self,warehouse_name, warehouse_type:str, warehouse_size:str,
                     cur.execute(query,(warehouse_name))
                 else:
                     raise Exception('Invalid grants for warehouse: ' + warehouse_name)
-            
+        
+        if tags_to_remove is not None:
+            for tag in tags_to_remove:
+                for tag_name in tag.keys():
+                    query = 'ALTER WAREHOUSE identifier(%s) UNSET TAG identifier(%s);'
+                    params = (warehouse_name,tag_name)
+                    cur.execute(query,params)
+        
+        if grants_to_remove is not None:
+            for grant in grants_to_remove:
+                for role_name in grant.keys():
+                    permission = grant[role_name]
+                    query = "REVOKE " + permission + " ON WAREHOUSE identifier(%s) FROM ROLE " + role_name + ";"
+                    cur.execute(query,(warehouse_name))
+
     except Exception as ex:
         msg = 'SQL Error:\n\nQuery: ' + query + '\n\nError Message:\n' + str(ex) + '\n\n'
         raise Exception(msg)

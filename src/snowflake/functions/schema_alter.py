@@ -1,4 +1,4 @@
-def schema_alter(self,schema_name:str, data_retention_time_in_days:int, comment:str, owner:str, tags:list, grants:list):
+def schema_alter(self,schema_name:str, data_retention_time_in_days:int, comment:str, owner:str, tags:list, grants:list, tags_to_remove:list, grants_to_remove:list):
     cur = self._conn.cursor()
     query = ''
     try:
@@ -42,7 +42,21 @@ def schema_alter(self,schema_name:str, data_retention_time_in_days:int, comment:
                     cur.execute(query,(schema_name))
                 else:
                     raise Exception('Invalid grants for warehouse: ' + schema_name)
-                
+        
+        if tags_to_remove is not None:
+            for tag in tags_to_remove:
+                for tag_name in tag.keys():
+                    query = 'ALTER SCHEMA identifier(%s) UNSET TAG identifier(%s);'
+                    params = (schema_name,tag_name)
+                    cur.execute(query,params)
+        
+        if grants_to_remove is not None:
+            for grant in grants_to_remove:
+                for role_name in grant.keys():
+                    permission = grant[role_name]
+                    query = "REVOKE " + permission + " ON SCHEMA identifier(%s) FROM ROLE " + role_name + ";"
+                    cur.execute(query,(schema_name))
+
     except Exception as ex:
         msg = 'SQL Error:\n\nQuery: ' + query + '\n\nError Message:\n' + str(ex) + '\n\n'
         raise Exception(msg)
