@@ -58,7 +58,7 @@ def deploy_role(self, role_name:str, file_hash:str, config:dict, object_state_di
             
             if state_file_hash != file_hash or state_db_hash != db_hash:
                 tags_to_remove = list(filter(lambda x: x not in TAGS, db_role[role_name]['TAGS_SANS_JINJA']))
-                grants_to_remove = list(filter(lambda x: x not in GRANTS, db_role[role_name]['GRANTS_SANS_JINJA']))
+                grants_to_remove = list(filter(lambda x: x not in CHILD_ROLES, db_role[role_name]['CHILD_ROLES_SANS_JINJA']))
                 
                 self._sf.role_alter(role_name, OWNER, COMMENT, CHILD_ROLES, TAGS, tags_to_remove, grants_to_remove)
                 db_hash_new = self._hasher.hash_role(OWNER, COMMENT, CHILD_ROLES, TAGS)

@@ -33,17 +33,24 @@ def classify_object(semaphore, logger, sf, writer, wrangle, full_object_name:str
                 classification_category_value = col['PRIVACY_CATEGORY']
                 classification_probability_key = wrangle.create_jinja_ref(tag_db_name, tags_schema_name, 'CLASSIFICATION_PROBABILITY')
                 classification_probability_value = col['PROBABILITY']
+                classified_key = wrangle.create_jinja_ref(tag_db_name, tags_schema_name, 'CLASSIFIED')
+                classified_value = 'Y'
 
                 c = {}
                 c['NAME'] = col['COLUMN_NAME']
                 ctags = []
-                ctags.append({sensitivity_key:sensitivity_value})
+                remove_tags = []
+                ctags.append({classified_key:classified_value})
                 if sensitivity_value != 'INTERNAL':
+                    ctags.append({sensitivity_key:sensitivity_value})
                     ctags.append({semantic_key:semantic_value})
                     ctags.append({classification_category_key:classification_category_value})
                     ctags.append({classification_probability_key:classification_probability_value})
+                else:
+                    remove_tags.append(sensitivity_key)
 
                 c['TAGS'] = ctags
+                c['TAGS_TO_REMOVE'] = remove_tags
                 columns.append(c)
             d = {}
             d['COLUMNS'] = columns
@@ -69,11 +76,8 @@ def classify_object(semaphore, logger, sf, writer, wrangle, full_object_name:str
 
             # Object
             object_metadata_only = True
-            
             writer.write_object_file(db_name_sans_prefix, schema_name, d, object_metadata_only, False)
             
-            
-
             msg = 'classified (%s seconds)' % (round(time.time() - thread_start_time,1))
             logger.log(thread_name,msg)
         except Exception as ex:
@@ -152,6 +156,11 @@ def snowflake_classify(args:dict):
 
             tag = {}
             tag['TAG_NAME'] = 'CLASSIFICATION_PROBABILITY'
+            tag['OWNER'] = default_owner
+            writer.write_tag_file(db_name_sans_prefix, tags_schema_name, tag, ignore_existing)
+
+            tag = {}
+            tag['TAG_NAME'] = 'CLASSIFIED'
             tag['OWNER'] = default_owner
             writer.write_tag_file(db_name_sans_prefix, tags_schema_name, tag, ignore_existing)
 

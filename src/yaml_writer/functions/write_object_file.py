@@ -69,16 +69,21 @@ def write_object_file(self,database_name:str, schema_name:str, d: dict, object_m
                     if col_name == file_col['NAME']:
                         file_tags = file_col['TAGS']
                         break
-                #print('## INPUT TAGS ##')
-                #print(input_tags)
-                #print('## FILE TAGS ##')
-                #print(file_tags)
+                
                 if not override_existing_tags:
                     new_tags = self.choose_list_objects_file_trumps(input_tags, file_tags)
                 else:
                     new_tags = self.choose_list_objects(input_tags, file_tags)
+
+                if 'TAGS_TO_REMOVE' in col:
+                    for tag_to_remove in col['TAGS_TO_REMOVE']:
+                        for tag in new_tags:
+                            if tag_to_remove in tag.keys():
+                                new_tags.remove(tag)
                 tmp_col['TAGS'] = new_tags
+
             new_cols.append(tmp_col)
+
         data['COLUMNS'] = new_cols
     elif 'COLUMNS' in d:
         for col in d['COLUMNS']:
