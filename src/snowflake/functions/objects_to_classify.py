@@ -69,7 +69,7 @@ def objects_to_classify(self,classify_databases:list, tag_database:str, tag_sche
                             and t.LEVEL = 'COLUMN'
                             and t.TAG_DATABASE = %s
                             and t.TAG_SCHEMA = %s
-                            and t.TAG_NAME = 'SENSITIVITY'
+                            and t.TAG_NAME in ('SENSITIVITY','CLASSIFIED')
                             and t.TAG_VALUE != 'NEW'
                         left join 
                             (WITH base as (
@@ -137,7 +137,7 @@ def objects_to_classify(self,classify_databases:list, tag_database:str, tag_sche
                     and t.DOMAIN = 'COLUMN'
                     and t.TAG_DATABASE = %s
                     and t.TAG_SCHEMA = %s
-                    and t.TAG_NAME = 'SENSITIVITY'
+                    and t.TAG_NAME in ('SENSITIVITY','CLASSIFIED')
                     and t.TAG_VALUE != 'NEW'
                 left join 
                     (WITH base as (
