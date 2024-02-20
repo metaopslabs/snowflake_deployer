@@ -233,7 +233,7 @@ class yaml_writer:
 
 
             for field_value in field_value_list:
-                if "<~<~" in field_value or '{{' in field_value: 
+                if ("<~<~" in field_value or '{{' in field_value) and ('REF(' not in field_value.upper() and 'ROLE(' not in field_value.upper()): 
                     file_contains_jinja = True
         else:
             file_value_exists = False
