@@ -25,6 +25,7 @@ from src.common.enums import HANDLE_OWNERSHIP_OPTION
 import traceback
 from src.validator.validator import validator
 from src.configurator.configurator import configurator
+import copy 
 
 def role(ref_val: str) -> str:
     val = validator()
@@ -258,19 +259,25 @@ def task(semaphore, tn:str, ref_id:str, data:dict, completed:list, processing:li
         logger.log_error(str(ex), object_name, traceback_text)
         #raise
 
-def check_for_circular_ref(map, key, original_key):
+def check_for_circular_ref(map, key, key_list):
     #print('key:' + key + '; next:'+str(map[key]['next']))
     if map[key]['next'] == []:
         is_circle = False
+        map[key]['is_circle'] = False
         #print('key:' + key + '; is_circle:'+str(is_circle))
     else:
         for n in map[key]['next']:
-            if n == original_key:
+            if n in key_list:
                 is_circle = True
-            else:
-                is_circle = check_for_circular_ref(map, n, original_key) # check the next of the next
+                map[key]['is_circle'] = True 
                 break
+            else:
+                is_circle = check_for_circular_ref(map, n, key_list) # check the next of the next
+                if is_circle:
+                    map[key]['is_circle'] = True 
+                    break
             #print('key:' + key + '; n:'+n+ '; is_circle:'+str(is_circle))
+    key_list.append(key)
     return is_circle
     
 
@@ -569,18 +576,73 @@ def snowflake_deploy(args:dict):
 
         #####################################################
         # Check for circular dependencies
+        #print(map)
+        #print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+        # working_map = copy.deepcopy(map)
+
+        # # set up
+        # for k in working_map.keys():
+        #     working_map[k]['working_next'] = str(working_map[k]['next'])
+        #     working_map[k]['working_dependency_map'] = k
+        #     working_map[k]['still_processing'] = 1
+        #     working_map[k]['circular_ref_found'] = False
+            
+        # records_to_keep_processing = len(working_map.keys()) # kick off first loop iteration
+        # while records_to_keep_processing > 0:
+        #     records_to_keep_processing = 0
+        #     for k in working_map.keys():
+        #         if working_map[k]['still_processing'] == 1:
+        #             working_next_key = working_map[k]['working_next']
+
+        #             if working_next_key != '' and working_next_key is not None:
+        #                 # add to working map
+        #                 working_map[k]['working_dependency_map'] += ' -> ' + working_next_key
+
+        #                 # circular ref found
+        #                 if working_next_key == k:
+        #                     working_map[k]['circular_ref_found'] = True
+        #                     working_map[k]['still_processing'] = 0
+
+        #                 # Next key exists 
+        #                 elif working_next_key == '' or working_next_key is None:
+        #                     working_map[k]['still_processing'] = 0
+                        
+        #                 else:
+        #                     records_to_keep_processing += 1
+
+        #                 next_key = working_map[working_next_key]['next']
+        #                 working_map[k]['working_next'] = next_key 
+        
+        # circular_references_found = False
+        # for k in working_map.keys():
+        #     if working_map[k]['circular_ref_found']:
+        #         logger.log('','Circular reference found: ' + working_map[k]['working_dependency_map'])
+        #         circular_references_found = True 
+
+        # if circular_references_found:
+        #     raise Exception('Circular keys found!  See log for details')
         
         circular_keys = []
         for key in map.keys():
-            is_circle = check_for_circular_ref(map, key, key)
+            is_circle = check_for_circular_ref(map, key, [key])
             if is_circle and key not in circular_keys:
                 circular_keys.append(key)
+        
+        
         #print('******** CIRCULAR KEYS ********')
         #print(circular_keys)    
         #print('*******************************')
+        for circular_key in circular_keys:
+            logger.log('','Circular reference found: ' + circular_key)
+        
+        #print('********************')
+        #print(map)
+        #print('********************')
         if circular_keys != []:
-            circular_keys_string = '[' + ', '.join(circular_keys) + ']'
-            raise Exception('Circular keys found in the following objects: ' + circular_keys_string)
+            raise Exception('Circular keys found!  See log for details')
+        #if circular_keys != []:
+        #    circular_keys_string = '[' + ', '.join(circular_keys) + ']'
+        #    raise Exception('Circular keys found in the following objects: ' + circular_keys_string)
 
         #####################################################
         # Get starting objects (ones with no dependencies)
