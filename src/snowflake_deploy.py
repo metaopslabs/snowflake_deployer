@@ -576,9 +576,50 @@ def snowflake_deploy(args:dict):
 
         #####################################################
         # Check for circular dependencies
+        loop_cnt = 1
+        working_map = copy.deepcopy(map)
+
+        # set up
+        for k in working_map.keys():
+            working_map[k]['working_next'] = working_map[k]['next']
+            working_map[k]['working_dependency_maps'] = [[k]]
+            working_map[k]['still_processing'] = 1
+            working_map[k]['circular_ref_found'] = False
+        
+        records_to_keep_processing = len(working_map.keys())
+        while records_to_keep_processing > 0:
+            records_to_keep_processing = 0
+            for k in working_map.keys():
+                if working_map[k]['still_processing'] == 1:
+                    if not working_map[k]['working_next']:
+                        working_map[k]['still_processing'] = 0
+                    
+
+                    next_working_next = []
+                    next_working_dependency_maps = []
+                    for working_next_key in working_map[k]['working_next']:
+                        for dep_map in working_map[k]['working_dependency_maps']:
+                            if working_next_key in dep_map:
+                                working_map[k]['circular_ref_found'] = True
+                                working_map[k]['still_processing'] = 0
+                                working_map[k]['circular_map'] = dep_map + [working_next_key]
+                                break
+                            else:
+                                new_map = copy.deepcopy(dep_map)
+                                new_map.append(working_next_key)
+                                next_working_dependency_maps.append(new_map)
+                        
+                        if not working_map[k]['circular_ref_found']:
+                            records_to_keep_processing+=1
+
+                        next_working_next = next_working_next + working_map[working_next_key]['next']
+
+                    working_map[k]['working_next'] = next_working_next 
+                    working_map[k]['working_dependency_maps'] = next_working_dependency_maps
+            loop_cnt += 1
         #print(map)
         #print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
-        # working_map = copy.deepcopy(map)
+        # 
 
         # # set up
         # for k in working_map.keys():
@@ -622,13 +663,21 @@ def snowflake_deploy(args:dict):
         # if circular_references_found:
         #     raise Exception('Circular keys found!  See log for details')
         
+        #circular_keys = []
+        #for key in map.keys():
+        #    is_circle = check_for_circular_ref(map, key, [key])
+        #    if is_circle and key not in circular_keys:
+        #        circular_keys.append(key)
         circular_keys = []
-        for key in map.keys():
-            is_circle = check_for_circular_ref(map, key, [key])
-            if is_circle and key not in circular_keys:
-                circular_keys.append(key)
-        
-        
+        for k in working_map.keys():
+            if working_map[k]['circular_ref_found']:
+                map_str = k 
+                cnt = 0
+                for i in working_map[k]['circular_map']:
+                    map_str = map_str + ' -> ' + i if cnt > 0 else map_str + i 
+                    cnt += 1
+                circular_keys.append(map_str)
+                #logger.log('','Circular reference found: ' + map_str)
         #print('******** CIRCULAR KEYS ********')
         #print(circular_keys)    
         #print('*******************************')
