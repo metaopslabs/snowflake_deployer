@@ -37,11 +37,11 @@ def role_alter(self,role_name, owner:str, comment:str, child_roles:list, tags:li
                     cur.execute(query,params)
 
         if grants_to_remove is not None:
-            for grant in grants_to_remove:
-                for child_role in grant.keys():
-                    #permission = grant[child_role]
-                    query = "REVOKE role " + child_role + " FROM ROLE " + role_name + ";"
-                    cur.execute(query)
+            for child_role in grants_to_remove:
+                #for child_role in grant.keys():
+                #permission = grant[child_role]
+                query = "REVOKE role " + child_role + " FROM ROLE " + role_name + ";"
+                cur.execute(query)
 
     except Exception as ex:
         msg = 'SQL Error:\n\nQuery: ' + query + '\n\nError Message:\n' + str(ex) + '\n\n'

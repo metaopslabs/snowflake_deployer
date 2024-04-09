@@ -20,3 +20,6 @@
 # 0.1.16
 - Multi threading of tags & grants for performance improvements
 - Added config value IMPORT_OBJECT_TYPES to limit object types
+
+# 0.1.24
+- Fixed the circular reference check and added circular path outputs
